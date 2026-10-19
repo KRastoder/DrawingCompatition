@@ -1,4 +1,4 @@
-import { api, formatDate, readProblem, setStatus, todayISO } from "./api.js";
+import { api, createAvatar, formatDate, readProblem, setStatus, todayISO } from "./api.js";
 import { initShell } from "./shell.js";
 
 const gallery = document.getElementById("gallery");
@@ -24,6 +24,19 @@ const rangeDateField = document.getElementById("range-date-field");
 let currentUser = null;
 let activeDrawing = null;
 let filterMode = "all";
+
+function ownerLink(user, extraClass) {
+    const link = document.createElement("a");
+    link.className = "owner-link" + (extraClass ? " " + extraClass : "");
+    link.href = "/profile/" + user.id;
+    link.appendChild(createAvatar(user, "avatar-tiny"));
+
+    const name = document.createElement("span");
+    name.textContent = user.displayName;
+    link.appendChild(name);
+
+    return link;
+}
 
 function voteButton(drawing) {
     const button = document.createElement("button");
@@ -66,8 +79,10 @@ function createCard(drawing, rank) {
     description.textContent = hasDescription ? drawing.description : "No description";
 
     const meta = document.createElement("div");
-    meta.className = "card-meta";
-    meta.textContent = drawing.owner.displayName + " · " + formatDate(drawing.createdAt);
+    meta.className = "card-meta card-owner";
+    const created = document.createElement("span");
+    created.textContent = formatDate(drawing.createdAt);
+    meta.append(ownerLink(drawing.owner), created);
 
     const actions = document.createElement("div");
     actions.className = "card-actions";
@@ -75,7 +90,7 @@ function createCard(drawing, rank) {
 
     const open = document.createElement("button");
     open.type = "button";
-    open.className = "btn btn-small btn-ghost";
+    open.className = "btn btn-small";
     open.textContent = "Open";
     open.addEventListener("click", function () {
         openDetail(drawing.id);
@@ -218,8 +233,7 @@ function buildMeta(drawing) {
     const votes = document.createElement("span");
     votes.textContent = drawing.voteCount + (drawing.voteCount === 1 ? " vote" : " votes");
 
-    const owner = document.createElement("span");
-    owner.textContent = "by " + drawing.owner.displayName;
+    const owner = ownerLink(drawing.owner, "detail-owner");
 
     const created = document.createElement("span");
     created.textContent = formatDate(drawing.createdAt);
@@ -288,8 +302,8 @@ function createComment(comment) {
     const head = document.createElement("div");
     head.className = "comment-head";
 
-    const author = document.createElement("span");
-    author.textContent = comment.author.displayName;
+    const author = ownerLink(comment.author, "comment-author");
+    author.setAttribute("aria-label", "View " + comment.author.displayName + "'s profile");
 
     const date = document.createElement("span");
     date.textContent = formatDate(comment.createdAt);

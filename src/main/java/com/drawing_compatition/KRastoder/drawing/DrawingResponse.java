@@ -12,15 +12,23 @@ public record DrawingResponse(
         String imageUrl
 ) {
 
-    public record UserSummary(Long id, String username, String displayName) {
+    public record UserSummary(Long id, String username, String displayName, String avatarUrl) {
     }
 
     public static DrawingResponse from(DrawingSummary summary) {
+        String avatarUrl = summary.ownerHasAvatar()
+                ? "/api/users/" + summary.ownerId() + "/avatar"
+                : null;
         return new DrawingResponse(
                 summary.id(),
                 summary.description(),
                 summary.createdAt(),
-                new UserSummary(summary.ownerId(), summary.ownerUsername(), summary.ownerDisplayName()),
+                new UserSummary(
+                        summary.ownerId(),
+                        summary.ownerUsername(),
+                        summary.ownerDisplayName(),
+                        avatarUrl
+                ),
                 summary.voteCount(),
                 summary.votedByMe() > 0,
                 "/api/drawings/" + summary.id() + "/image"

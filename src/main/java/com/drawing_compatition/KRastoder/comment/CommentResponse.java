@@ -10,10 +10,13 @@ public record CommentResponse(
         Author author
 ) {
 
-    public record Author(Long id, String username, String displayName) {
+    public record Author(Long id, String username, String displayName, String avatarUrl) {
     }
 
     public static CommentResponse from(Comment comment) {
+        String avatarUrl = comment.getUser().isHasAvatar()
+                ? "/api/users/" + comment.getUser().getId() + "/avatar"
+                : null;
         return new CommentResponse(
                 comment.getId(),
                 comment.getBody(),
@@ -22,7 +25,8 @@ public record CommentResponse(
                 new Author(
                         comment.getUser().getId(),
                         comment.getUser().getUsername(),
-                        comment.getUser().getDisplayName()
+                        comment.getUser().getDisplayName(),
+                        avatarUrl
                 )
         );
     }

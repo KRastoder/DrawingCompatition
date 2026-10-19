@@ -57,7 +57,8 @@ public class DrawingService {
                 user.getUsername(),
                 user.getDisplayName(),
                 0,
-                0
+                0,
+                user.isHasAvatar()
         );
         return DrawingResponse.from(summary);
     }

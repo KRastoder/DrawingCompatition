@@ -1,5 +1,6 @@
 package com.drawing_compatition.KRastoder.auth;
 
+import com.drawing_compatition.KRastoder.user.ProfileService;
 import com.drawing_compatition.KRastoder.user.UserResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -20,9 +21,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+    private final ProfileService profileService;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, ProfileService profileService) {
         this.authService = authService;
+        this.profileService = profileService;
     }
 
     @GetMapping("/csrf")
@@ -62,6 +65,6 @@ public class AuthController {
 
     @GetMapping("/me")
     public UserResponse me(@AuthenticationPrincipal AppUserPrincipal principal) {
-        return UserResponse.from(principal);
+        return profileService.get(principal.id());
     }
 }

@@ -10,6 +10,7 @@ public record DrawingSummary(
         String ownerUsername,
         String ownerDisplayName,
         long voteCount,
-        long votedByMe
+        long votedByMe,
+        boolean ownerHasAvatar
 ) {
 }

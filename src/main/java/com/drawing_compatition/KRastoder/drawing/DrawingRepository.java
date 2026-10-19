@@ -19,14 +19,15 @@ public interface DrawingRepository extends JpaRepository<Drawing, Long> {
                 u.username,
                 u.displayName,
                 count(v.id),
-                sum(case when v.user.id = :viewerId then 1 else 0 end)
+                sum(case when v.user.id = :viewerId then 1 else 0 end),
+                u.hasAvatar
             )
             from Drawing d
             join d.user u
             left join d.votes v
             where d.createdAt >= :from
               and d.createdAt < :to
-            group by d.id, d.description, d.createdAt, u.id, u.username, u.displayName
+            group by d.id, d.description, d.createdAt, u.id, u.username, u.displayName, u.hasAvatar
             order by count(v.id) desc, d.createdAt desc, d.id desc
             """)
     List<DrawingSummary> findSummaries(
@@ -44,13 +45,14 @@ public interface DrawingRepository extends JpaRepository<Drawing, Long> {
                 u.username,
                 u.displayName,
                 count(v.id),
-                sum(case when v.user.id = :viewerId then 1 else 0 end)
+                sum(case when v.user.id = :viewerId then 1 else 0 end),
+                u.hasAvatar
             )
             from Drawing d
             join d.user u
             left join d.votes v
             where d.user.id = :ownerId
-            group by d.id, d.description, d.createdAt, u.id, u.username, u.displayName
+            group by d.id, d.description, d.createdAt, u.id, u.username, u.displayName, u.hasAvatar
             order by d.createdAt desc, d.id desc
             """)
     List<DrawingSummary> findSummariesByOwner(
@@ -67,13 +69,14 @@ public interface DrawingRepository extends JpaRepository<Drawing, Long> {
                 u.username,
                 u.displayName,
                 count(v.id),
-                sum(case when v.user.id = :viewerId then 1 else 0 end)
+                sum(case when v.user.id = :viewerId then 1 else 0 end),
+                u.hasAvatar
             )
             from Drawing d
             join d.user u
             left join d.votes v
             where d.id = :id
-            group by d.id, d.description, d.createdAt, u.id, u.username, u.displayName
+            group by d.id, d.description, d.createdAt, u.id, u.username, u.displayName, u.hasAvatar
             """)
     Optional<DrawingSummary> findSummaryById(@Param("id") Long id, @Param("viewerId") Long viewerId);
 

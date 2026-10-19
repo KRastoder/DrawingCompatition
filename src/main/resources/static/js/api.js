@@ -13,6 +13,38 @@ export function formatDate(iso) {
     });
 }
 
+export function initials(name) {
+    const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) {
+        return "?";
+    }
+    if (parts.length === 1) {
+        return parts[0].slice(0, 2).toUpperCase();
+    }
+    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+}
+
+export function createAvatar(user, extraClass) {
+    const avatar = document.createElement("span");
+    avatar.className = "avatar" + (extraClass ? " " + extraClass : "");
+
+    const label = user ? user.displayName : "";
+    if (user && user.avatarUrl) {
+        const image = document.createElement("img");
+        image.src = user.avatarUrl;
+        image.alt = "";
+        image.loading = "lazy";
+        image.addEventListener("error", function () {
+            avatar.replaceChildren(document.createTextNode(initials(label)));
+        });
+        avatar.appendChild(image);
+    } else {
+        avatar.textContent = initials(label);
+    }
+
+    return avatar;
+}
+
 export function readCookie(name) {
     const prefix = name + "=";
     const parts = document.cookie ? document.cookie.split("; ") : [];

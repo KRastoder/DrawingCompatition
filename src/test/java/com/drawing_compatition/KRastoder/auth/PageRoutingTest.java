@@ -55,5 +55,13 @@ class PageRoutingTest {
         mockMvc.perform(get("/my-drawings").with(user(signedIn)))
                 .andExpect(status().isOk())
                 .andExpect(forwardedUrl("/my-drawings.html"));
+
+        mockMvc.perform(get("/profile").with(user(signedIn)))
+                .andExpect(status().isOk())
+                .andExpect(forwardedUrl("/profile.html"));
+
+        mockMvc.perform(get("/profile/123").with(user(signedIn)))
+                .andExpect(status().isOk())
+                .andExpect(forwardedUrl("/profile.html"));
     }
 }

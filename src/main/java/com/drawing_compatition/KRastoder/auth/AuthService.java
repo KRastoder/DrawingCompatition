@@ -1,6 +1,7 @@
 package com.drawing_compatition.KRastoder.auth;
 
 import com.drawing_compatition.KRastoder.common.ConflictException;
+import com.drawing_compatition.KRastoder.common.NotFoundException;
 import com.drawing_compatition.KRastoder.user.User;
 import com.drawing_compatition.KRastoder.user.UserRepository;
 import com.drawing_compatition.KRastoder.user.UserResponse;
@@ -64,7 +65,9 @@ public class AuthService {
 
         AppUserPrincipal principal = (AppUserPrincipal) authentication.getPrincipal();
         storeAuthentication(principal, httpRequest, httpResponse);
-        return UserResponse.from(principal);
+        User user = users.findById(principal.id())
+                .orElseThrow(() -> new NotFoundException("User not found."));
+        return UserResponse.from(user);
     }
 
     public void logout(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {

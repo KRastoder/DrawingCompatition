@@ -25,4 +25,14 @@ public class PageController {
     public String myDrawingsPage() {
         return "forward:/my-drawings.html";
     }
+
+    @GetMapping("/profile")
+    public String profilePage() {
+        return "forward:/profile.html";
+    }
+
+    @GetMapping("/profile/{id:[0-9]+}")
+    public String publicProfilePage() {
+        return "forward:/profile.html";
+    }
 }

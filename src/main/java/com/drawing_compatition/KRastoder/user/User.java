@@ -29,6 +29,18 @@ public class User {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Column(columnDefinition = "text")
+    private String bio;
+
+    @Column(name = "avatar_data", columnDefinition = "bytea")
+    private byte[] avatarData;
+
+    @Column(name = "avatar_content_type", length = 100)
+    private String avatarContentType;
+
+    @Column(name = "has_avatar", nullable = false)
+    private boolean hasAvatar;
+
     protected User() {
     }
 
@@ -65,5 +77,37 @@ public class User {
 
     public void setPasswordHash(String passwordHash) {
         this.passwordHash = passwordHash;
+    }
+
+    public String getBio() {
+        return bio;
+    }
+
+    public void setBio(String bio) {
+        this.bio = bio;
+    }
+
+    public byte[] getAvatarData() {
+        return avatarData;
+    }
+
+    public String getAvatarContentType() {
+        return avatarContentType;
+    }
+
+    public boolean isHasAvatar() {
+        return hasAvatar;
+    }
+
+    public void setAvatar(byte[] avatarData, String avatarContentType) {
+        this.avatarData = avatarData;
+        this.avatarContentType = avatarContentType;
+        this.hasAvatar = avatarData != null;
+    }
+
+    public void clearAvatar() {
+        this.avatarData = null;
+        this.avatarContentType = null;
+        this.hasAvatar = false;
     }
 }
