@@ -1,0 +1,247 @@
+import { api, formatDate, readProblem, setStatus } from "./api.js";
+import { initShell } from "./shell.js";
+
+const gallery = document.getElementById("mine-gallery");
+const emptyState = document.getElementById("mine-empty");
+const statusBox = document.getElementById("mine-status");
+
+let currentUser = null;
+let drawings = [];
+
+function createButton(label, className, handler) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "btn btn-small" + (className ? " " + className : "");
+    button.textContent = label;
+    button.addEventListener("click", handler);
+    return button;
+}
+
+function createCard(drawing) {
+    const card = document.createElement("article");
+    card.className = "drawing-card manage-card";
+    card.id = "drawing-" + drawing.id;
+
+    const image = document.createElement("img");
+    image.className = "card-image";
+    image.src = drawing.imageUrl;
+    image.alt = "Drawing by " + drawing.owner.displayName;
+    image.loading = "lazy";
+
+    const body = document.createElement("div");
+    body.className = "card-body";
+
+    const description = document.createElement("p");
+    const hasDescription = drawing.description && drawing.description.length > 0;
+    description.className = "card-description" + (hasDescription ? "" : " empty");
+    description.textContent = hasDescription ? drawing.description : "No description";
+
+    const meta = document.createElement("div");
+    meta.className = "card-meta";
+    meta.textContent = formatDate(drawing.createdAt) + " · " +
+        drawing.voteCount + (drawing.voteCount === 1 ? " vote" : " votes");
+
+    const actions = document.createElement("div");
+    actions.className = "card-actions manage-actions";
+
+    const view = document.createElement("a");
+    view.className = "btn btn-small btn-ghost";
+    view.href = "/?drawing=" + drawing.id;
+    view.textContent = "View on home";
+
+    actions.append(
+        createButton("Edit description", "", function () {
+            showEditor(card, drawing);
+        }),
+        createButton("Replace image", "", function () {
+            fileInput.click();
+        }),
+        createButton("Delete", "btn-danger", function () {
+            deleteDrawing(drawing);
+        }),
+        view
+    );
+
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = "image/png,image/jpeg,image/webp";
+    fileInput.hidden = true;
+    fileInput.addEventListener("change", function () {
+        replaceImage(card, drawing, fileInput);
+    });
+
+    body.append(description, meta, actions);
+    card.append(image, body, fileInput);
+    return card;
+}
+
+function showEditor(card, drawing) {
+    if (card.querySelector(".inline-edit")) {
+        return;
+    }
+
+    const description = card.querySelector(".card-description");
+    description.classList.add("hidden");
+
+    const form = document.createElement("form");
+    form.className = "inline-edit";
+
+    const textarea = document.createElement("textarea");
+    textarea.maxLength = 2000;
+    textarea.value = drawing.description || "";
+    textarea.setAttribute("aria-label", "Drawing description");
+
+    const save = document.createElement("button");
+    save.type = "submit";
+    save.className = "btn btn-primary btn-small";
+    save.textContent = "Save";
+
+    const cancel = createButton("Cancel", "", function () {
+        form.remove();
+        description.classList.remove("hidden");
+    });
+
+    const buttons = document.createElement("div");
+    buttons.className = "inline-edit-actions";
+    buttons.append(save, cancel);
+
+    form.append(textarea, buttons);
+    form.addEventListener("submit", async function (event) {
+        event.preventDefault();
+        save.disabled = true;
+        try {
+            const response = await api("/api/drawings/" + drawing.id, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ description: textarea.value })
+            });
+            if (!response.ok) {
+                throw new Error(await readProblem(response));
+            }
+            const updated = await response.json();
+            drawing.description = updated.description;
+            const hasDescription = updated.description && updated.description.length > 0;
+            description.textContent = hasDescription ? updated.description : "No description";
+            description.classList.toggle("empty", !hasDescription);
+            form.remove();
+            description.classList.remove("hidden");
+            setStatus(statusBox, "Description updated.", false);
+        } catch (error) {
+            setStatus(statusBox, error.message, true);
+            save.disabled = false;
+        }
+    });
+
+    description.after(form);
+    textarea.focus();
+}
+
+async function replaceImage(card, drawing, input) {
+    const file = input.files && input.files[0];
+    if (!file) {
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("image", file, file.name);
+
+    try {
+        const response = await api("/api/drawings/" + drawing.id + "/image", {
+            method: "PUT",
+            body: formData
+        });
+        if (!response.ok) {
+            throw new Error(await readProblem(response));
+        }
+        const updated = await response.json();
+        drawing.imageUrl = updated.imageUrl + "?v=" + Date.now();
+        const image = card.querySelector(".card-image");
+        if (image) {
+            image.src = drawing.imageUrl;
+        }
+        setStatus(statusBox, "Image replaced.", false);
+    } catch (error) {
+        setStatus(statusBox, error.message, true);
+    } finally {
+        input.value = "";
+    }
+}
+
+async function deleteDrawing(drawing) {
+    if (!window.confirm("Delete this drawing? This also removes its votes and comments.")) {
+        return;
+    }
+
+    try {
+        const response = await api("/api/drawings/" + drawing.id, { method: "DELETE" });
+        if (!response.ok) {
+            throw new Error(await readProblem(response));
+        }
+        drawings = drawings.filter(function (item) {
+            return item.id !== drawing.id;
+        });
+        render();
+        setStatus(statusBox, "Drawing deleted.", false);
+    } catch (error) {
+        setStatus(statusBox, error.message, true);
+    }
+}
+
+function highlightHash() {
+    if (!window.location.hash.startsWith("#drawing-")) {
+        return;
+    }
+    const target = document.getElementById(window.location.hash.slice(1));
+    if (!target) {
+        return;
+    }
+    target.classList.add("highlight");
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function render() {
+    gallery.replaceChildren();
+
+    if (drawings.length === 0) {
+        emptyState.classList.remove("hidden");
+        return;
+    }
+
+    emptyState.classList.add("hidden");
+    drawings.forEach(function (drawing) {
+        gallery.appendChild(createCard(drawing));
+    });
+    highlightHash();
+}
+
+async function loadMine() {
+    try {
+        const response = await api("/api/drawings/mine");
+        if (!response.ok && response.status !== 404) {
+            throw new Error(await readProblem(response));
+        }
+        drawings = response.status === 404 ? [] : await response.json();
+        render();
+    } catch (error) {
+        setStatus(statusBox, error.message, true);
+    }
+}
+
+async function init() {
+    currentUser = await initShell("mine");
+
+    const justCreated = new URLSearchParams(window.location.search).get("created") === "1";
+    if (justCreated) {
+        window.history.replaceState({}, "", "/my-drawings");
+    }
+
+    await loadMine();
+
+    if (justCreated) {
+        setStatus(statusBox, "Drawing published! It is now in your collection.", false);
+    }
+}
+
+init().catch(function (error) {
+    setStatus(statusBox, error.message, true);
+});

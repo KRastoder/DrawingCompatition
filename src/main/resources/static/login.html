@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sign in | Drawing Competition</title>
+    <link rel="stylesheet" href="/css/app.css">
+</head>
+<body class="auth-page">
+<main class="auth-shell">
+    <section class="brand-panel">
+        <span class="brand-badge">Drawing Competition</span>
+        <h1>Show your best sketch, vote for the rest.</h1>
+        <p>Draw in the browser, publish your work, and see which drawings win the most votes by day or by date range.</p>
+        <p>Every drawing belongs to its creator, and every vote counts once.</p>
+    </section>
+
+    <section class="auth-card">
+        <div class="tabs" role="tablist">
+            <button type="button" id="tab-login" class="active" role="tab" aria-selected="true">Sign in</button>
+            <button type="button" id="tab-register" role="tab" aria-selected="false">Create account</button>
+        </div>
+
+        <form id="login-form" novalidate>
+            <h2>Welcome back</h2>
+            <div class="field">
+                <label for="login-username">Username</label>
+                <input type="text" id="login-username" name="username" autocomplete="username" required>
+            </div>
+            <div class="field">
+                <label for="login-password">Password</label>
+                <input type="password" id="login-password" name="password" autocomplete="current-password" required>
+            </div>
+            <button type="submit" class="btn btn-primary" id="login-submit">Sign in</button>
+        </form>
+
+        <form id="register-form" novalidate hidden>
+            <h2>Join the competition</h2>
+            <div class="field">
+                <label for="register-username">Username</label>
+                <input type="text" id="register-username" name="username" autocomplete="username"
+                       placeholder="letters, numbers, dots, dashes" required>
+            </div>
+            <div class="field">
+                <label for="register-display-name">Display name</label>
+                <input type="text" id="register-display-name" name="displayName" autocomplete="nickname" required>
+            </div>
+            <div class="field">
+                <label for="register-password">Password</label>
+                <input type="password" id="register-password" name="password" autocomplete="new-password"
+                       minlength="8" required>
+            </div>
+            <button type="submit" class="btn btn-primary" id="register-submit">Create account</button>
+        </form>
+
+        <p id="auth-error" class="form-error hidden" role="alert"></p>
+        <p id="auth-info" class="status hidden" role="status"></p>
+    </section>
+</main>
+
+<script src="/js/auth.js"></script>
+</body>
+</html>

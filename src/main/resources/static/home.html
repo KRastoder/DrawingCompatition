@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Gallery | Drawing Competition</title>
+    <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<header id="app-header" class="app-header"></header>
+
+<main class="page">
+    <section class="panel">
+        <div class="gallery-head">
+            <div>
+                <h2>Gallery</h2>
+                <p class="tagline">Ranked by votes. Click the heart to vote for a drawing.</p>
+            </div>
+            <div class="filters">
+                <div class="filter-modes" role="group" aria-label="Date filter mode">
+                    <button type="button" class="active" data-mode="all">All</button>
+                    <button type="button" data-mode="day">Day</button>
+                    <button type="button" data-mode="range">Range</button>
+                </div>
+                <div class="field hidden" id="single-date-field">
+                    <label for="filter-date">Date</label>
+                    <input type="date" id="filter-date">
+                </div>
+                <div class="field hidden" id="range-date-field">
+                    <label for="filter-from">From</label>
+                    <input type="date" id="filter-from">
+                    <label for="filter-to">To</label>
+                    <input type="date" id="filter-to">
+                </div>
+                <button type="button" class="btn btn-small" id="apply-filter">Apply</button>
+                <button type="button" class="btn btn-small btn-ghost" id="reset-filter">Reset</button>
+            </div>
+        </div>
+
+        <p id="gallery-status" class="status hidden" role="status"></p>
+        <div id="gallery" class="gallery" aria-live="polite"></div>
+        <div id="gallery-empty" class="empty-state hidden">
+            <h3>No drawings here yet</h3>
+            <p>Be the first to publish a drawing.</p>
+            <a class="btn btn-primary" href="/newdrawing">Create a drawing</a>
+        </div>
+    </section>
+</main>
+
+<dialog id="detail-dialog" class="detail-dialog">
+    <div class="dialog-inner">
+        <div class="dialog-head">
+            <div>
+                <h2 id="detail-title">Drawing</h2>
+                <div id="detail-meta" class="detail-meta"></div>
+            </div>
+            <button type="button" class="dialog-close" id="detail-close" aria-label="Close">×</button>
+        </div>
+
+        <div class="detail-grid">
+            <div>
+                <img id="detail-image" class="detail-image" alt="Drawing">
+                <div id="detail-owner-actions" class="owner-actions hidden">
+                    <a id="detail-manage-link" class="btn btn-small" href="/my-drawings">Manage this drawing</a>
+                </div>
+            </div>
+
+            <div>
+                <p id="detail-description" class="card-description"></p>
+
+                <div class="comments">
+                    <h3>Comments</h3>
+                    <div id="comment-list"></div>
+                    <form id="comment-form" class="comment-form">
+                        <div class="field">
+                            <label for="comment-body">Add a comment</label>
+                            <textarea id="comment-body" maxlength="1000" placeholder="Say something about this drawing"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-small">Post comment</button>
+                    </form>
+                    <p id="comment-status" class="status hidden" role="status"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</dialog>
+
+<script type="module" src="/js/home.js"></script>
+</body>
+</html>

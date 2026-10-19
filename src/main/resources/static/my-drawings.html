@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>My drawings | Drawing Competition</title>
+    <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<header id="app-header" class="app-header"></header>
+
+<main class="page">
+    <section class="panel">
+        <div class="page-head">
+            <div>
+                <h2>My drawings</h2>
+                <p class="tagline">Edit descriptions, replace images, or remove your work.</p>
+            </div>
+            <a class="btn btn-primary" href="/newdrawing">New drawing</a>
+        </div>
+
+        <p id="mine-status" class="status hidden" role="status"></p>
+
+        <div id="mine-gallery" class="gallery manage-gallery" aria-live="polite"></div>
+
+        <div id="mine-empty" class="empty-state hidden">
+            <h3>You haven't posted any drawings yet</h3>
+            <p>Create your first drawing and it will show up here.</p>
+            <a class="btn btn-primary" href="/newdrawing">Create a drawing</a>
+        </div>
+    </section>
+</main>
+
+<script type="module" src="/js/my-drawings.js"></script>
+</body>
+</html>
