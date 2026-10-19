@@ -3,53 +3,76 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Profile | Drawing Competition</title>
+    <title>★ Member Profile | The Drawing Competition ★</title>
     <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
-<header id="app-header" class="app-header"></header>
+<div class="site-frame" id="top">
+    <header id="app-header" class="app-header"></header>
 
-<main class="page narrow">
-    <section class="panel profile-card">
-        <div class="page-head">
-            <div>
-                <h2 id="profile-heading">Your profile</h2>
-                <p id="profile-subtitle" class="tagline">Upload a picture and tell people about your art.</p>
-            </div>
-            <a class="btn btn-small btn-ghost" href="/">Back to gallery</a>
-        </div>
+    <div class="site-body">
+        <main class="content-column">
+            <nav class="breadcrumb" aria-label="Breadcrumb">
+                You are here: <a href="/">Home</a> <span>»</span> Member Profile
+            </nav>
 
-        <div class="profile-head">
-            <div id="profile-avatar" class="profile-avatar"></div>
-            <div class="profile-identity">
-                <h3 id="profile-display-name"></h3>
-                <p id="profile-username" class="tagline"></p>
-            </div>
-            <div id="profile-actions" class="profile-actions hidden">
-                <button type="button" class="btn btn-small" id="upload-avatar-button">Upload picture</button>
-                <button type="button" class="btn btn-small btn-danger" id="remove-avatar-button">Remove picture</button>
-                <input type="file" id="avatar-input" accept="image/png,image/jpeg,image/webp" hidden>
-            </div>
-        </div>
+            <section class="content-box profile-card">
+                <div class="section-title">
+                    <h1 id="profile-heading">★ Your Profile ★</h1>
+                    <p id="profile-subtitle" class="tagline">Upload a picture and tell people about your art.</p>
+                </div>
 
-        <div id="profile-edit" class="hidden">
-            <div class="field">
-                <label for="profile-bio">Description</label>
-                <textarea id="profile-bio" maxlength="500" rows="5"
-                          placeholder="Tell people about yourself and your art"></textarea>
-                <div class="field-hint"><span id="bio-count">0</span>/500</div>
-            </div>
-            <button type="button" class="btn btn-primary" id="save-bio-button">Save description</button>
-        </div>
+                <div class="profile-head">
+                    <div id="profile-avatar" class="profile-avatar"></div>
+                    <div class="profile-identity">
+                        <h3 id="profile-display-name"></h3>
+                        <p id="profile-username" class="tagline"></p>
+                    </div>
+                    <div id="profile-actions" class="profile-actions hidden">
+                        <button type="button" class="btn btn-small" id="upload-avatar-button">Upload Picture</button>
+                        <button type="button" class="btn btn-small btn-danger" id="remove-avatar-button">Remove Picture</button>
+                        <input type="file" id="avatar-input" accept="image/png,image/jpeg,image/webp" hidden>
+                    </div>
+                </div>
 
-        <div id="profile-readonly" class="hidden">
-            <h3>Description</h3>
-            <p id="profile-bio-text" class="profile-bio-text"></p>
-        </div>
+                <div id="profile-edit" class="hidden">
+                    <div class="field">
+                        <label for="profile-bio">Description</label>
+                        <textarea id="profile-bio" maxlength="500" rows="5"
+                                  placeholder="Tell people about yourself and your art"></textarea>
+                        <div class="field-hint"><span id="bio-count">0</span>/500</div>
+                    </div>
+                    <button type="button" class="btn btn-primary" id="save-bio-button">Save Description</button>
+                </div>
 
-        <p id="profile-status" class="status hidden" role="status"></p>
-    </section>
-</main>
+                <div id="profile-readonly" class="hidden">
+                    <h3>★ About Me ★</h3>
+                    <p id="profile-bio-text" class="profile-bio-text"></p>
+                </div>
+
+                <p id="profile-status" class="status hidden" role="status"></p>
+
+                <p class="toolbar-note">
+                    <a class="btn btn-small" href="/">« Back to gallery</a>
+                    <a class="btn btn-small" href="/my-drawings">Manage My Drawings</a>
+                </p>
+            </section>
+
+            <section class="content-box">
+                <div class="section-title">
+                    <h2>★ Latest Drawings ★</h2>
+                    <p class="tagline">Recent doodles from this artist.</p>
+                </div>
+                <div id="profile-drawings" class="profile-post-list" aria-live="polite"></div>
+                <p id="profile-drawings-status" class="status hidden" role="status"></p>
+            </section>
+        </main>
+
+        <aside id="site-sidebar" class="sidebar" aria-label="Sidebar"></aside>
+    </div>
+
+    <footer id="site-footer" class="site-footer"></footer>
+</div>
 
 <script type="module" src="/js/profile.js"></script>
 </body>

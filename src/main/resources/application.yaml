@@ -31,3 +31,8 @@ server:
 logging:
   level:
     org.hibernate.SQL: warn
+
+# Development-only demo data. Enable with SEED_DEMO_DATA=true or
+# --app.seed-demo-data=true. The seeder tops up to 10 users / 100 drawings.
+app:
+  seed-demo-data: ${SEED_DEMO_DATA:false}

@@ -1,5 +1,5 @@
 import { api, createAvatar, formatDate, readProblem, setStatus, todayISO } from "./api.js";
-import { initShell } from "./shell.js";
+import { addSidebarWidget, initShell } from "./shell.js";
 
 const gallery = document.getElementById("gallery");
 const galleryEmpty = document.getElementById("gallery-empty");
@@ -21,9 +21,12 @@ const filterTo = document.getElementById("filter-to");
 const singleDateField = document.getElementById("single-date-field");
 const rangeDateField = document.getElementById("range-date-field");
 
+const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+
 let currentUser = null;
 let activeDrawing = null;
 let filterMode = "all";
+let topTenBody = null;
 
 function ownerLink(user, extraClass) {
     const link = document.createElement("a");
@@ -38,12 +41,43 @@ function ownerLink(user, extraClass) {
     return link;
 }
 
+function drawingTitle(drawing) {
+    const description = (drawing.description || "").trim();
+    if (!description) {
+        return "Untitled Drawing No. " + drawing.id;
+    }
+    const firstLine = description.split(/\r?\n/)[0].trim();
+    return firstLine.length > 72 ? firstLine.slice(0, 69).trimEnd() + "..." : firstLine;
+}
+
+function dateBadge(drawing) {
+    const date = new Date(drawing.createdAt);
+    const badge = document.createElement("div");
+    badge.className = "post-date";
+    badge.setAttribute("aria-label", formatDate(drawing.createdAt));
+
+    const month = document.createElement("span");
+    month.className = "post-month";
+    month.textContent = MONTHS[date.getMonth()];
+
+    const day = document.createElement("span");
+    day.className = "post-day";
+    day.textContent = String(date.getDate()).padStart(2, "0");
+
+    const year = document.createElement("span");
+    year.className = "post-year";
+    year.textContent = String(date.getFullYear());
+
+    badge.append(month, day, year);
+    return badge;
+}
+
 function voteButton(drawing) {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "vote-button" + (drawing.votedByMe ? " active" : "");
     button.innerHTML = '<span class="heart">' + (drawing.votedByMe ? "\u2665" : "\u2661") + "</span>" +
-        "<span>" + drawing.voteCount + "</span>";
+        "<span>" + drawing.voteCount + (drawing.voteCount === 1 ? " vote" : " votes") + "</span>";
     button.setAttribute("aria-pressed", String(drawing.votedByMe));
     button.setAttribute("aria-label", drawing.votedByMe ? "Remove your vote" : "Vote for this drawing");
     button.addEventListener("click", function () {
@@ -52,61 +86,164 @@ function voteButton(drawing) {
     return button;
 }
 
-function createCard(drawing, rank) {
-    const card = document.createElement("article");
-    card.className = "drawing-card";
+function openButton(drawing, label, className) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = className || "btn btn-small";
+    button.textContent = label;
+    button.addEventListener("click", function () {
+        openDetail(drawing.id);
+    });
+    return button;
+}
 
-    const badge = document.createElement("span");
-    badge.className = "rank-badge" + (rank <= 3 ? " rank-" + rank : "");
-    badge.textContent = String(rank);
-    badge.setAttribute("aria-label", "Rank " + rank);
+function createPost(drawing, rank) {
+    const post = document.createElement("article");
+    post.className = "post";
+    post.id = "drawing-" + drawing.id;
 
+    if (rank <= 10) {
+        const sticker = document.createElement("span");
+        sticker.className = "rank-sticker" + (rank <= 3 ? " rank-" + rank : "");
+        sticker.textContent = "#" + rank;
+        sticker.setAttribute("aria-label", "Rank " + rank);
+        post.appendChild(sticker);
+    }
+
+    const head = document.createElement("div");
+    head.className = "post-head";
+
+    const heading = document.createElement("div");
+    heading.className = "post-heading";
+
+    const title = document.createElement("h2");
+    title.className = "post-title";
+    const titleLink = document.createElement("a");
+    titleLink.href = "/?drawing=" + drawing.id;
+    titleLink.textContent = drawingTitle(drawing);
+    titleLink.addEventListener("click", function (event) {
+        event.preventDefault();
+        openDetail(drawing.id);
+    });
+    title.appendChild(titleLink);
+
+    const created = new Date(drawing.createdAt);
+    const isNew = Date.now() - created.getTime() < 2 * 24 * 60 * 60 * 1000;
+
+    const meta = document.createElement("p");
+    meta.className = "post-meta";
+    meta.append("Posted by ", ownerLink(drawing.owner), " on " + formatDate(drawing.createdAt));
+    if (isNew) {
+        const blinkie = document.createElement("span");
+        blinkie.className = "new-blinkie";
+        blinkie.textContent = "NEW!";
+        meta.append(" ", blinkie);
+    }
+
+    heading.append(title, meta);
+    head.append(dateBadge(drawing), heading);
+
+    const frame = document.createElement("div");
+    frame.className = "post-image-frame";
     const image = document.createElement("img");
-    image.className = "card-image";
+    image.className = "post-image";
     image.src = drawing.imageUrl;
     image.alt = "Drawing by " + drawing.owner.displayName;
     image.loading = "lazy";
     image.addEventListener("click", function () {
         openDetail(drawing.id);
     });
+    frame.appendChild(image);
 
-    const body = document.createElement("div");
-    body.className = "card-body";
+    post.append(head, frame);
 
-    const description = document.createElement("p");
-    const hasDescription = drawing.description && drawing.description.length > 0;
-    description.className = "card-description" + (hasDescription ? "" : " empty");
-    description.textContent = hasDescription ? drawing.description : "No description";
+    const description = (drawing.description || "").trim();
+    const firstLine = description.split(/\r?\n/)[0].trim();
+    const remainder = description.slice(firstLine.length).trim();
+    if (remainder) {
+        const body = document.createElement("p");
+        body.className = "post-description";
+        body.textContent = remainder;
+        post.appendChild(body);
+    }
 
-    const meta = document.createElement("div");
-    meta.className = "card-meta card-owner";
-    const created = document.createElement("span");
-    created.textContent = formatDate(drawing.createdAt);
-    meta.append(ownerLink(drawing.owner), created);
+    const footer = document.createElement("div");
+    footer.className = "post-footer";
 
-    const actions = document.createElement("div");
-    actions.className = "card-actions";
-    actions.appendChild(voteButton(drawing));
+    const comments = openButton(drawing, "\u2665 Comments / Guestbook", "btn btn-small btn-ghost");
+    comments.setAttribute("aria-label", "Open comments for this drawing");
 
-    const open = document.createElement("button");
-    open.type = "button";
-    open.className = "btn btn-small";
-    open.textContent = "Open";
-    open.addEventListener("click", function () {
+    const permalink = document.createElement("a");
+    permalink.className = "post-link";
+    permalink.href = "/?drawing=" + drawing.id;
+    permalink.textContent = "\u2693 Permalink";
+    permalink.addEventListener("click", function (event) {
+        event.preventDefault();
         openDetail(drawing.id);
     });
-    actions.appendChild(open);
 
-    body.append(description, meta, actions);
-    card.append(image, body, badge);
-    return card;
+    const category = document.createElement("span");
+    category.className = "post-category";
+    category.textContent = "Drawing No. " + drawing.id;
+
+    footer.append(voteButton(drawing), comments, permalink, category);
+    post.appendChild(footer);
+
+    return post;
 }
 
 function renderGallery(drawings) {
     gallery.replaceChildren();
     drawings.forEach(function (drawing, index) {
-        gallery.appendChild(createCard(drawing, index + 1));
+        gallery.appendChild(createPost(drawing, index + 1));
     });
+    renderTopTen(drawings);
+}
+
+function renderTopTen(drawings) {
+    if (!topTenBody) {
+        return;
+    }
+
+    topTenBody.replaceChildren();
+    if (drawings.length === 0) {
+        const empty = document.createElement("p");
+        empty.textContent = "No drawings in this view.";
+        topTenBody.appendChild(empty);
+        return;
+    }
+
+    const list = document.createElement("ol");
+    list.className = "top-ten-list";
+    drawings.slice(0, 10).forEach(function (drawing, index) {
+        const item = document.createElement("li");
+
+        const rank = document.createElement("span");
+        rank.className = "top-ten-rank";
+        rank.textContent = String(index + 1).padStart(2, "0") + ".";
+
+        const link = document.createElement("a");
+        link.href = "/?drawing=" + drawing.id;
+        link.textContent = drawingTitle(drawing);
+        link.title = drawingTitle(drawing);
+        link.addEventListener("click", function (event) {
+            event.preventDefault();
+            openDetail(drawing.id);
+        });
+
+        const votes = document.createElement("span");
+        votes.className = "top-ten-votes";
+        votes.textContent = drawing.voteCount + "\u2665";
+
+        item.append(rank, link, votes);
+        list.appendChild(item);
+    });
+    topTenBody.appendChild(list);
+
+    const note = document.createElement("p");
+    note.className = "tiny";
+    note.textContent = "Ranked by votes, refreshed on every visit.";
+    topTenBody.appendChild(note);
 }
 
 function showEmpty(message) {
@@ -188,7 +325,6 @@ async function toggleVote(drawing, button) {
         }
     } catch (error) {
         setStatus(galleryStatus, error.message, true);
-    } finally {
         button.disabled = false;
     }
 }
@@ -227,6 +363,13 @@ function setupFilters() {
     });
 }
 
+function setupTopTenWidget() {
+    const widget = addSidebarWidget("\u2605 Top 10 Drawings \u2605", "<p class=\"tiny\">Loading the charts...</p>", "widget-top10");
+    if (widget) {
+        topTenBody = widget.querySelector(".widget-body");
+    }
+}
+
 function buildMeta(drawing) {
     detailMeta.replaceChildren();
 
@@ -242,7 +385,7 @@ function buildMeta(drawing) {
 }
 
 function renderDetail(drawing) {
-    detailTitle.textContent = "Drawing by " + drawing.owner.displayName;
+    detailTitle.textContent = drawingTitle(drawing);
     buildMeta(drawing);
     detailImage.src = drawing.imageUrl;
     detailImage.alt = "Drawing by " + drawing.owner.displayName;
@@ -287,6 +430,12 @@ async function loadComments(drawingId) {
             throw new Error(await readProblem(response));
         }
         const comments = await response.json();
+        if (comments.length === 0) {
+            const empty = document.createElement("p");
+            empty.className = "tiny";
+            empty.textContent = "Nobody has signed the guestbook yet. Be the first!";
+            commentList.appendChild(empty);
+        }
         comments.forEach(function (comment) {
             commentList.appendChild(createComment(comment));
         });
@@ -444,6 +593,7 @@ function setupDialog() {
 
 async function init() {
     currentUser = await initShell("home");
+    setupTopTenWidget();
     setupFilters();
     setupDialog();
     await loadGallery();

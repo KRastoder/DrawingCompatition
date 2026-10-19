@@ -3,33 +3,47 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>My drawings | Drawing Competition</title>
+    <title>★ My Drawings | The Drawing Competition ★</title>
     <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
-<header id="app-header" class="app-header"></header>
+<div class="site-frame" id="top">
+    <header id="app-header" class="app-header"></header>
 
-<main class="page">
-    <section class="panel">
-        <div class="page-head">
-            <div>
-                <h2>My drawings</h2>
-                <p class="tagline">Edit descriptions, replace images, or remove your work.</p>
-            </div>
-            <a class="btn btn-primary" href="/newdrawing">New drawing</a>
-        </div>
+    <div class="site-body">
+        <main class="content-column">
+            <nav class="breadcrumb" aria-label="Breadcrumb">
+                You are here: <a href="/">Home</a> <span>»</span> My Drawings
+            </nav>
 
-        <p id="mine-status" class="status hidden" role="status"></p>
+            <section class="content-box">
+                <div class="section-title">
+                    <h1>★ My Drawings ★</h1>
+                    <p class="tagline">Edit descriptions, replace images, or remove your work.</p>
+                </div>
 
-        <div id="mine-gallery" class="gallery manage-gallery" aria-live="polite"></div>
+                <p class="toolbar-note">
+                    <a class="btn btn-primary" href="/newdrawing">+ New Drawing</a>
+                    <a class="btn btn-small" href="/">« Back to gallery</a>
+                </p>
 
-        <div id="mine-empty" class="empty-state hidden">
-            <h3>You haven't posted any drawings yet</h3>
-            <p>Create your first drawing and it will show up here.</p>
-            <a class="btn btn-primary" href="/newdrawing">Create a drawing</a>
-        </div>
-    </section>
-</main>
+                <p id="mine-status" class="status hidden" role="status"></p>
+
+                <div id="mine-gallery" class="post-list manage-list" aria-live="polite"></div>
+
+                <div id="mine-empty" class="empty-state hidden">
+                    <h3>You haven't posted any drawings yet</h3>
+                    <p>Create your first drawing and it will show up here.</p>
+                    <a class="btn btn-primary" href="/newdrawing">Create a drawing</a>
+                </div>
+            </section>
+        </main>
+
+        <aside id="site-sidebar" class="sidebar" aria-label="Sidebar"></aside>
+    </div>
+
+    <footer id="site-footer" class="site-footer"></footer>
+</div>
 
 <script type="module" src="/js/my-drawings.js"></script>
 </body>

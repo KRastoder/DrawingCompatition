@@ -1,12 +1,24 @@
 import { api, formatDate, readProblem, setStatus } from "./api.js";
-import { initShell } from "./shell.js";
+import { addSidebarWidget, initShell } from "./shell.js";
 
 const gallery = document.getElementById("mine-gallery");
 const emptyState = document.getElementById("mine-empty");
 const statusBox = document.getElementById("mine-status");
 
+const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+
 let currentUser = null;
 let drawings = [];
+let statsBody = null;
+
+function drawingTitle(drawing) {
+    const description = (drawing.description || "").trim();
+    if (!description) {
+        return "Untitled Drawing No. " + drawing.id;
+    }
+    const firstLine = description.split(/\r?\n/)[0].trim();
+    return firstLine.length > 72 ? firstLine.slice(0, 69).trimEnd() + "..." : firstLine;
+}
 
 function createButton(label, className, handler) {
     const button = document.createElement("button");
@@ -17,29 +29,68 @@ function createButton(label, className, handler) {
     return button;
 }
 
+function dateBadge(drawing) {
+    const date = new Date(drawing.createdAt);
+    const badge = document.createElement("div");
+    badge.className = "post-date";
+    badge.setAttribute("aria-label", formatDate(drawing.createdAt));
+
+    const month = document.createElement("span");
+    month.className = "post-month";
+    month.textContent = MONTHS[date.getMonth()];
+
+    const day = document.createElement("span");
+    day.className = "post-day";
+    day.textContent = String(date.getDate()).padStart(2, "0");
+
+    const year = document.createElement("span");
+    year.className = "post-year";
+    year.textContent = String(date.getFullYear());
+
+    badge.append(month, day, year);
+    return badge;
+}
+
 function createCard(drawing) {
     const card = document.createElement("article");
-    card.className = "drawing-card manage-card";
+    card.className = "post manage-post";
     card.id = "drawing-" + drawing.id;
 
+    const head = document.createElement("div");
+    head.className = "post-head";
+
+    const heading = document.createElement("div");
+    heading.className = "post-heading";
+
+    const title = document.createElement("h2");
+    title.className = "post-title";
+    const link = document.createElement("a");
+    link.href = "/?drawing=" + drawing.id;
+    link.textContent = drawingTitle(drawing);
+    title.appendChild(link);
+
+    const meta = document.createElement("p");
+    meta.className = "post-meta";
+    meta.textContent = formatDate(drawing.createdAt) + " \u00b7 " +
+        drawing.voteCount + (drawing.voteCount === 1 ? " vote" : " votes") +
+        " \u00b7 Drawing No. " + drawing.id;
+
+    heading.append(title, meta);
+    head.append(dateBadge(drawing), heading);
+
+    const frame = document.createElement("div");
+    frame.className = "post-image-frame";
     const image = document.createElement("img");
-    image.className = "card-image";
+    image.className = "post-image manage-image";
     image.src = drawing.imageUrl;
     image.alt = "Drawing by " + drawing.owner.displayName;
     image.loading = "lazy";
-
-    const body = document.createElement("div");
-    body.className = "card-body";
+    frame.appendChild(image);
 
     const description = document.createElement("p");
     const hasDescription = drawing.description && drawing.description.length > 0;
-    description.className = "card-description" + (hasDescription ? "" : " empty");
-    description.textContent = hasDescription ? drawing.description : "No description";
-
-    const meta = document.createElement("div");
-    meta.className = "card-meta";
-    meta.textContent = formatDate(drawing.createdAt) + " · " +
-        drawing.voteCount + (drawing.voteCount === 1 ? " vote" : " votes");
+    description.className = "card-description post-description" + (hasDescription ? "" : " empty");
+    description.textContent = hasDescription ? drawing.description : "No description yet - add one below!";
 
     const actions = document.createElement("div");
     actions.className = "card-actions manage-actions";
@@ -70,8 +121,7 @@ function createCard(drawing) {
         replaceImage(card, drawing, fileInput);
     });
 
-    body.append(description, meta, actions);
-    card.append(image, body, fileInput);
+    card.append(head, frame, description, actions, fileInput);
     return card;
 }
 
@@ -121,7 +171,7 @@ function showEditor(card, drawing) {
             const updated = await response.json();
             drawing.description = updated.description;
             const hasDescription = updated.description && updated.description.length > 0;
-            description.textContent = hasDescription ? updated.description : "No description";
+            description.textContent = hasDescription ? updated.description : "No description yet - add one below!";
             description.classList.toggle("empty", !hasDescription);
             form.remove();
             description.classList.remove("hidden");
@@ -155,7 +205,7 @@ async function replaceImage(card, drawing, input) {
         }
         const updated = await response.json();
         drawing.imageUrl = updated.imageUrl + "?v=" + Date.now();
-        const image = card.querySelector(".card-image");
+        const image = card.querySelector(".manage-image");
         if (image) {
             image.src = drawing.imageUrl;
         }
@@ -199,19 +249,57 @@ function highlightHash() {
     target.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
+function renderStats() {
+    if (!statsBody) {
+        return;
+    }
+
+    const totalVotes = drawings.reduce(function (sum, drawing) {
+        return sum + drawing.voteCount;
+    }, 0);
+
+    const newest = drawings.length > 0
+        ? formatDate(drawings.reduce(function (latest, drawing) {
+            return new Date(drawing.createdAt) > new Date(latest.createdAt) ? drawing : latest;
+        }, drawings[0]).createdAt)
+        : "No posts yet";
+
+    statsBody.replaceChildren();
+
+    const list = document.createElement("ul");
+    list.className = "widget-list plain stats-list";
+
+    [
+        ["Drawings posted", drawings.length],
+        ["Votes received", totalVotes],
+        ["Latest post", newest]
+    ].forEach(function (entry) {
+        const item = document.createElement("li");
+        const label = document.createElement("span");
+        label.textContent = entry[0] + ": ";
+        const value = document.createElement("strong");
+        value.textContent = String(entry[1]);
+        item.append(label, value);
+        list.appendChild(item);
+    });
+
+    statsBody.appendChild(list);
+}
+
 function render() {
     gallery.replaceChildren();
 
     if (drawings.length === 0) {
         emptyState.classList.remove("hidden");
-        return;
+    } else {
+        emptyState.classList.add("hidden");
+        drawings.forEach(function (drawing) {
+            gallery.appendChild(createCard(drawing));
+        });
+        highlightHash();
     }
 
-    emptyState.classList.add("hidden");
-    drawings.forEach(function (drawing) {
-        gallery.appendChild(createCard(drawing));
-    });
-    highlightHash();
+    renderStats();
 }
 
 async function loadMine() {
@@ -227,8 +315,24 @@ async function loadMine() {
     }
 }
 
+function setupSidebar() {
+    const stats = addSidebarWidget("\u2605 Your Stats \u2605", "<p class=\"tiny\">Counting...</p>", "widget-stats");
+    if (stats) {
+        statsBody = stats.querySelector(".widget-body");
+    }
+
+    addSidebarWidget("\u2605 House Rules \u2605", `
+        <ul class="widget-list">
+            <li>You can edit or delete only your own drawings.</li>
+            <li>Replacing an image keeps the votes and comments.</li>
+            <li>Deleting a drawing removes its guestbook too.</li>
+        </ul>
+    `, "widget-rules");
+}
+
 async function init() {
     currentUser = await initShell("mine");
+    setupSidebar();
 
     const justCreated = new URLSearchParams(window.location.search).get("created") === "1";
     if (justCreated) {

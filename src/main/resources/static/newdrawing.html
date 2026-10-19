@@ -3,50 +3,72 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>New drawing | Drawing Competition</title>
+    <title>★ Submit a Drawing | The Drawing Competition ★</title>
     <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
-<header id="app-header" class="app-header"></header>
+<div class="site-frame" id="top">
+    <header id="app-header" class="app-header"></header>
 
-<main class="page narrow">
-    <section class="panel">
-        <div class="page-head">
-            <div>
-                <h2>Create a new drawing</h2>
-                <p class="tagline">Draw with your mouse or finger, then publish it to the gallery.</p>
-            </div>
-            <a class="btn btn-small btn-ghost" href="/">Back to gallery</a>
-        </div>
+    <div class="site-body">
+        <main class="content-column">
+            <nav class="breadcrumb" aria-label="Breadcrumb">
+                You are here: <a href="/">Home</a> <span>»</span> Submit a Drawing
+            </nav>
 
-        <div class="toolbar">
-            <label for="brush-color">Colour
-                <input type="color" id="brush-color" value="#22252d">
-            </label>
-            <label for="brush-size">Size
-                <input type="range" id="brush-size" min="1" max="40" value="6">
-            </label>
-            <span id="brush-size-value" class="user-chip">6 px</span>
-            <button type="button" class="btn btn-small" id="undo-button">Undo</button>
-            <button type="button" class="btn btn-small" id="clear-button">Clear</button>
-        </div>
+            <section class="content-box">
+                <div class="section-title">
+                    <h1>★ Submit a Drawing ★</h1>
+                    <p class="tagline">Draw with your mouse or finger, then publish it to the gallery.</p>
+                </div>
 
-        <div class="canvas-wrap">
-            <canvas id="drawing-canvas" width="1000" height="700" aria-label="Drawing canvas"></canvas>
-        </div>
+                <div class="paint-window">
+                    <div class="paint-titlebar">untitled.bmp - Paint</div>
+                    <div class="paint-menubar" aria-hidden="true">
+                        <span>File</span>
+                        <span>Edit</span>
+                        <span>View</span>
+                        <span>Image</span>
+                        <span>Colors</span>
+                        <span>Help</span>
+                    </div>
 
-        <div class="upload-row">
-            <div class="field">
-                <label for="drawing-description">Description (optional)</label>
-                <textarea id="drawing-description" maxlength="2000"
-                          placeholder="Give your drawing a title or a short note"></textarea>
-            </div>
-            <button type="button" class="btn btn-primary" id="publish-button">Publish drawing</button>
-        </div>
+                    <div class="toolbar">
+                        <label for="brush-color">Colour
+                            <input type="color" id="brush-color" value="#22252d">
+                        </label>
+                        <label for="brush-size">Size
+                            <input type="range" id="brush-size" min="1" max="40" value="6">
+                        </label>
+                        <span id="brush-size-value" class="brush-size-value">6 px</span>
+                        <button type="button" class="btn btn-small" id="undo-button">Undo</button>
+                        <button type="button" class="btn btn-small" id="clear-button">Clear</button>
+                    </div>
 
-        <p id="studio-status" class="status hidden" role="status"></p>
-    </section>
-</main>
+                    <div class="canvas-wrap">
+                        <canvas id="drawing-canvas" width="1000" height="700" aria-label="Drawing canvas"></canvas>
+                    </div>
+                </div>
+
+                <div class="upload-row">
+                    <div class="field">
+                        <label for="drawing-description">Description (optional)</label>
+                        <textarea id="drawing-description" maxlength="2000"
+                                  placeholder="Give your drawing a title or a short note"></textarea>
+                    </div>
+                    <button type="button" class="btn btn-primary" id="publish-button">✔ Publish Drawing</button>
+                    <a class="btn btn-small" href="/">« Back to gallery</a>
+                </div>
+
+                <p id="studio-status" class="status hidden" role="status"></p>
+            </section>
+        </main>
+
+        <aside id="site-sidebar" class="sidebar" aria-label="Sidebar"></aside>
+    </div>
+
+    <footer id="site-footer" class="site-footer"></footer>
+</div>
 
 <script type="module" src="/js/newdrawing.js"></script>
 </body>

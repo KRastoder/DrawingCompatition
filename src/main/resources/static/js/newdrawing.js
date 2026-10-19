@@ -1,5 +1,5 @@
 import { api, readProblem, setStatus } from "./api.js";
-import { initShell } from "./shell.js";
+import { addSidebarWidget, initShell } from "./shell.js";
 
 const CANVAS_WIDTH = 1000;
 const CANVAS_HEIGHT = 700;
@@ -13,6 +13,21 @@ const brushSizeValue = document.getElementById("brush-size-value");
 const descriptionInput = document.getElementById("drawing-description");
 const publishButton = document.getElementById("publish-button");
 const studioStatus = document.getElementById("studio-status");
+
+const DRAWING_PALETTE = [
+    ["#111111", "Black"],
+    ["#7f7f7f", "Grey"],
+    ["#ffffff", "White"],
+    ["#ff0000", "Red"],
+    ["#ff7f00", "Orange"],
+    ["#ffe600", "Yellow"],
+    ["#00a000", "Green"],
+    ["#00c2ff", "Cyan"],
+    ["#1d4ed8", "Blue"],
+    ["#8000ff", "Purple"],
+    ["#ff2d95", "Pink"],
+    ["#8b4513", "Brown"]
+];
 
 let history = [];
 let isDrawing = false;
@@ -137,8 +152,46 @@ async function publishDrawing() {
     }
 }
 
+function setupSidebar() {
+    const palette = document.createElement("div");
+    palette.className = "palette-grid";
+
+    DRAWING_PALETTE.forEach(function (entry) {
+        const swatch = document.createElement("button");
+        swatch.type = "button";
+        swatch.className = "palette-swatch";
+        swatch.style.backgroundColor = entry[0];
+        swatch.title = entry[1];
+        swatch.setAttribute("aria-label", "Use " + entry[1]);
+        swatch.addEventListener("click", function () {
+            brushColor.value = entry[0];
+            palette.querySelectorAll(".palette-swatch").forEach(function (other) {
+                other.classList.toggle("active", other === swatch);
+            });
+        });
+        palette.appendChild(swatch);
+    });
+
+    addSidebarWidget("\u2605 Quick Palette \u2605", palette, "widget-palette");
+
+    addSidebarWidget("\u2605 Studio Tips \u2605", `
+        <ul class="widget-list">
+            <li>Draw with your mouse, stylus, or finger.</li>
+            <li>Use <strong>Undo</strong> to step back up to 12 times.</li>
+            <li><strong>Clear</strong> wipes the canvas to white.</li>
+            <li>Add a description so voters know what they are looking at.</li>
+        </ul>
+    `, "widget-tips");
+
+    addSidebarWidget("\u2605 Today's Prompt \u2605", `
+        <p><strong>Draw your favourite snack as a friendly monster.</strong></p>
+        <p class="tiny">No pressure. Stick figures are art too.</p>
+    `, "widget-prompt");
+}
+
 async function init() {
     await initShell("new");
+    setupSidebar();
     setupCanvas();
 }
 

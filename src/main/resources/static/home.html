@@ -3,58 +3,80 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Gallery | Drawing Competition</title>
+    <title>★ Latest Drawings | The Drawing Competition ★</title>
     <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
-<header id="app-header" class="app-header"></header>
+<div class="site-frame" id="top">
+    <header id="app-header" class="app-header"></header>
 
-<main class="page">
-    <section class="panel">
-        <div class="gallery-head">
-            <div>
-                <h2>Gallery</h2>
-                <p class="tagline">Ranked by votes. Click the heart to vote for a drawing.</p>
-            </div>
-            <div class="filters">
-                <div class="filter-modes" role="group" aria-label="Date filter mode">
-                    <button type="button" class="active" data-mode="all">All</button>
-                    <button type="button" data-mode="day">Day</button>
-                    <button type="button" data-mode="range">Range</button>
-                </div>
-                <div class="field hidden" id="single-date-field">
-                    <label for="filter-date">Date</label>
-                    <input type="date" id="filter-date">
-                </div>
-                <div class="field hidden" id="range-date-field">
-                    <label for="filter-from">From</label>
-                    <input type="date" id="filter-from">
-                    <label for="filter-to">To</label>
-                    <input type="date" id="filter-to">
-                </div>
-                <button type="button" class="btn btn-small" id="apply-filter">Apply</button>
-                <button type="button" class="btn btn-small btn-ghost" id="reset-filter">Reset</button>
-            </div>
-        </div>
+    <div class="site-body">
+        <main class="content-column">
+            <nav class="breadcrumb" aria-label="Breadcrumb">
+                You are here: <a href="/">Home</a> <span>»</span> Latest Drawings
+            </nav>
 
-        <p id="gallery-status" class="status hidden" role="status"></p>
-        <div id="gallery" class="gallery" aria-live="polite"></div>
-        <div id="gallery-empty" class="empty-state hidden">
-            <h3>No drawings here yet</h3>
-            <p>Be the first to publish a drawing.</p>
-            <a class="btn btn-primary" href="/newdrawing">Create a drawing</a>
-        </div>
-    </section>
-</main>
+            <section class="content-box">
+                <div class="section-title">
+                    <h1>★ Latest Drawings ★</h1>
+                    <p class="tagline">Fresh doodles from the artists of the Drawing Competition. Ranked by votes, newest first.</p>
+                </div>
+
+                <div class="filters-box">
+                    <div class="filters-box-title">Find a Drawing</div>
+                    <div class="filters">
+                        <div class="filter-modes" role="group" aria-label="Date filter mode">
+                            <button type="button" class="active" data-mode="all">All</button>
+                            <button type="button" data-mode="day">Day</button>
+                            <button type="button" data-mode="range">Range</button>
+                        </div>
+                        <div class="field hidden" id="single-date-field">
+                            <label for="filter-date">Date</label>
+                            <input type="date" id="filter-date">
+                        </div>
+                        <div class="field hidden" id="range-date-field">
+                            <label for="filter-from">From</label>
+                            <input type="date" id="filter-from">
+                            <label for="filter-to">To</label>
+                            <input type="date" id="filter-to">
+                        </div>
+                        <button type="button" class="btn btn-small" id="apply-filter">Apply</button>
+                        <button type="button" class="btn btn-small btn-ghost" id="reset-filter">Reset</button>
+                    </div>
+                </div>
+
+                <p id="gallery-status" class="status hidden" role="status"></p>
+                <div id="gallery" class="post-list" aria-live="polite"></div>
+                <div id="gallery-empty" class="empty-state hidden">
+                    <h3>No drawings here yet</h3>
+                    <p>Be the first to publish a drawing.</p>
+                    <a class="btn btn-primary" href="/newdrawing">Create a drawing</a>
+                </div>
+            </section>
+        </main>
+
+        <aside id="site-sidebar" class="sidebar" aria-label="Sidebar"></aside>
+    </div>
+
+    <footer id="site-footer" class="site-footer"></footer>
+</div>
 
 <dialog id="detail-dialog" class="detail-dialog">
+    <div class="window-titlebar">
+        <span class="window-title">drawing-viewer.exe</span>
+        <div class="window-controls" aria-hidden="true">
+            <span class="window-control">_</span>
+            <span class="window-control">□</span>
+        </div>
+        <button type="button" class="dialog-close window-control window-close" id="detail-close" aria-label="Close">×</button>
+    </div>
+
     <div class="dialog-inner">
         <div class="dialog-head">
             <div>
                 <h2 id="detail-title">Drawing</h2>
                 <div id="detail-meta" class="detail-meta"></div>
             </div>
-            <button type="button" class="dialog-close" id="detail-close" aria-label="Close">×</button>
         </div>
 
         <div class="detail-grid">
@@ -69,7 +91,7 @@
                 <p id="detail-description" class="card-description"></p>
 
                 <div class="comments">
-                    <h3>Comments</h3>
+                    <h3>★ Comments / Guestbook ★</h3>
                     <div id="comment-list"></div>
                     <form id="comment-form" class="comment-form">
                         <div class="field">
