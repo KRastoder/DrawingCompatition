@@ -4,6 +4,7 @@ import { addSidebarWidget, initShell } from "./shell.js";
 const gallery = document.getElementById("gallery");
 const galleryEmpty = document.getElementById("gallery-empty");
 const galleryStatus = document.getElementById("gallery-status");
+const pagination = document.getElementById("pagination");
 
 const dialog = document.getElementById("detail-dialog");
 const detailTitle = document.getElementById("detail-title");
@@ -27,6 +28,9 @@ let currentUser = null;
 let activeDrawing = null;
 let filterMode = "all";
 let topTenBody = null;
+let currentPage = 0;
+let totalPages = 1;
+const PAGE_SIZE = 20;
 
 function ownerLink(user, extraClass) {
     const link = document.createElement("a");
@@ -192,11 +196,13 @@ function createPost(drawing, rank) {
     return post;
 }
 
-function renderGallery(drawings) {
+function renderGallery(drawings, page, totalPagesParam) {
     gallery.replaceChildren();
     drawings.forEach(function (drawing, index) {
-        gallery.appendChild(createPost(drawing, index + 1));
+        gallery.appendChild(createPost(drawing, index + 1 + page * PAGE_SIZE));
     });
+    totalPages = totalPagesParam;
+    renderPagination();
     renderTopTen(drawings);
 }
 
@@ -252,10 +258,79 @@ function showEmpty(message) {
         paragraph.textContent = message;
     }
     galleryEmpty.classList.remove("hidden");
+    pagination.classList.add("hidden");
 }
 
 function hideEmpty() {
     galleryEmpty.classList.add("hidden");
+    pagination.classList.remove("hidden");
+}
+
+function renderPagination() {
+    if (totalPages <= 1) {
+        pagination.classList.add("hidden");
+        return;
+    }
+
+    pagination.classList.remove("hidden");
+    pagination.replaceChildren();
+
+    const maxVisible = 7;
+    let startPage = Math.max(0, currentPage - Math.floor(maxVisible / 2));
+    let endPage = Math.min(totalPages - 1, startPage + maxVisible - 1);
+
+    if (endPage - startPage + 1 < maxVisible) {
+        startPage = Math.max(0, endPage - maxVisible + 1);
+    }
+
+    if (startPage > 0) {
+        pagination.appendChild(createPageButton(0, "« First"));
+        if (startPage > 1) {
+            const ellipsis = document.createElement("span");
+            ellipsis.className = "pagination-ellipsis";
+            ellipsis.textContent = "...";
+            pagination.appendChild(ellipsis);
+        }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+        pagination.appendChild(createPageButton(i, String(i + 1), i === currentPage));
+    }
+
+    if (endPage < totalPages - 1) {
+        if (endPage < totalPages - 2) {
+            const ellipsis = document.createElement("span");
+            ellipsis.className = "pagination-ellipsis";
+            ellipsis.textContent = "...";
+            pagination.appendChild(ellipsis);
+        }
+        pagination.appendChild(createPageButton(totalPages - 1, "Last »"));
+    }
+}
+
+function createPageButton(page, label, isActive) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "btn btn-small" + (isActive ? " active" : "");
+    button.textContent = label;
+    if (isActive) {
+        button.disabled = true;
+        button.setAttribute("aria-current", "page");
+    } else {
+        button.addEventListener("click", function () {
+            goToPage(page);
+        });
+    }
+    return button;
+}
+
+function goToPage(page) {
+    if (page < 0 || page >= totalPages || page === currentPage) {
+        return;
+    }
+    currentPage = page;
+    loadGallery();
+    window.scrollTo(0, 0);
 }
 
 async function loadGallery() {
@@ -276,6 +351,9 @@ async function loadGallery() {
         params.set("to", filterTo.value);
     }
 
+    params.set("page", String(currentPage));
+    params.set("size", String(PAGE_SIZE));
+
     setStatus(galleryStatus, "Loading drawings...", false);
 
     try {
@@ -286,7 +364,7 @@ async function loadGallery() {
             const problem = await response.json().catch(function () {
                 return {};
             });
-            renderGallery([]);
+            renderGallery([], 0, 1);
             showEmpty(problem.detail || "No drawings were found for that filter.");
             setStatus(galleryStatus, "", false);
             return;
@@ -296,12 +374,22 @@ async function loadGallery() {
             throw new Error(await readProblem(response));
         }
 
-        const drawings = await response.json();
-        renderGallery(drawings);
-        if (drawings.length === 0) {
-            showEmpty("No drawings were found.");
+        const data = await response.json();
+
+        if (data.content !== undefined) {
+            renderGallery(data.content, data.number, data.totalPages);
+            if (data.content.length === 0) {
+                showEmpty("No drawings were found.");
+            } else {
+                hideEmpty();
+            }
         } else {
-            hideEmpty();
+            renderGallery(data, 0, 1);
+            if (data.length === 0) {
+                showEmpty("No drawings were found.");
+            } else {
+                hideEmpty();
+            }
         }
         setStatus(galleryStatus, "", false);
     } catch (error) {
@@ -347,11 +435,15 @@ function setupFilters() {
     document.querySelectorAll(".filter-modes button").forEach(function (button) {
         button.addEventListener("click", function () {
             setFilterMode(button.dataset.mode);
+            currentPage = 0;
             loadGallery();
         });
     });
 
-    document.getElementById("apply-filter").addEventListener("click", loadGallery);
+    document.getElementById("apply-filter").addEventListener("click", function () {
+        currentPage = 0;
+        loadGallery();
+    });
 
     document.getElementById("reset-filter").addEventListener("click", function () {
         const now = todayISO();
@@ -359,6 +451,7 @@ function setupFilters() {
         filterFrom.value = now;
         filterTo.value = now;
         setFilterMode("all");
+        currentPage = 0;
         loadGallery();
     });
 }

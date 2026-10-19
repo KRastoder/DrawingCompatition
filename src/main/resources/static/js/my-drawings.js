@@ -4,12 +4,16 @@ import { addSidebarWidget, initShell } from "./shell.js";
 const gallery = document.getElementById("mine-gallery");
 const emptyState = document.getElementById("mine-empty");
 const statusBox = document.getElementById("mine-status");
+const pagination = document.getElementById("mine-pagination");
 
 const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
 
 let currentUser = null;
 let drawings = [];
 let statsBody = null;
+let currentPage = 0;
+let totalPages = 1;
+const PAGE_SIZE = 20;
 
 function drawingTitle(drawing) {
     const description = (drawing.description || "").trim();
@@ -230,7 +234,7 @@ async function deleteDrawing(drawing) {
         drawings = drawings.filter(function (item) {
             return item.id !== drawing.id;
         });
-        render();
+        renderGallery(drawings);
         setStatus(statusBox, "Drawing deleted.", false);
     } catch (error) {
         setStatus(statusBox, error.message, true);
@@ -286,30 +290,110 @@ function renderStats() {
     statsBody.appendChild(list);
 }
 
-function render() {
+function renderGallery(drawingsParam, page, totalPagesParam) {
+    drawings = drawingsParam;
     gallery.replaceChildren();
 
     if (drawings.length === 0) {
         emptyState.classList.remove("hidden");
+        pagination.classList.add("hidden");
     } else {
         emptyState.classList.add("hidden");
+        pagination.classList.remove("hidden");
         drawings.forEach(function (drawing) {
             gallery.appendChild(createCard(drawing));
         });
         highlightHash();
     }
-
+    totalPages = totalPagesParam;
+    renderPagination();
     renderStats();
+}
+
+function renderPagination() {
+    if (totalPages <= 1) {
+        pagination.classList.add("hidden");
+        return;
+    }
+
+    pagination.classList.remove("hidden");
+    pagination.replaceChildren();
+
+    const maxVisible = 7;
+    let startPage = Math.max(0, currentPage - Math.floor(maxVisible / 2));
+    let endPage = Math.min(totalPages - 1, startPage + maxVisible - 1);
+
+    if (endPage - startPage + 1 < maxVisible) {
+        startPage = Math.max(0, endPage - maxVisible + 1);
+    }
+
+    if (startPage > 0) {
+        pagination.appendChild(createPageButton(0, "« First"));
+        if (startPage > 1) {
+            const ellipsis = document.createElement("span");
+            ellipsis.className = "pagination-ellipsis";
+            ellipsis.textContent = "...";
+            pagination.appendChild(ellipsis);
+        }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+        pagination.appendChild(createPageButton(i, String(i + 1), i === currentPage));
+    }
+
+    if (endPage < totalPages - 1) {
+        if (endPage < totalPages - 2) {
+            const ellipsis = document.createElement("span");
+            ellipsis.className = "pagination-ellipsis";
+            ellipsis.textContent = "...";
+            pagination.appendChild(ellipsis);
+        }
+        pagination.appendChild(createPageButton(totalPages - 1, "Last »"));
+    }
+}
+
+function createPageButton(page, label, isActive) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "btn btn-small" + (isActive ? " active" : "");
+    button.textContent = label;
+    if (isActive) {
+        button.disabled = true;
+        button.setAttribute("aria-current", "page");
+    } else {
+        button.addEventListener("click", function () {
+            goToPage(page);
+        });
+    }
+    return button;
+}
+
+function goToPage(page) {
+    if (page < 0 || page >= totalPages || page === currentPage) {
+        return;
+    }
+    currentPage = page;
+    loadMine();
+    window.scrollTo(0, 0);
 }
 
 async function loadMine() {
     try {
-        const response = await api("/api/drawings/mine");
+        const params = new URLSearchParams();
+        params.set("page", String(currentPage));
+        params.set("size", String(PAGE_SIZE));
+
+        const response = await api("/api/drawings/mine?" + params.toString());
         if (!response.ok && response.status !== 404) {
             throw new Error(await readProblem(response));
         }
-        drawings = response.status === 404 ? [] : await response.json();
-        render();
+        const data = response.status === 404 ? { content: [], totalPages: 1 } : await response.json();
+
+        if (data.content !== undefined) {
+            renderGallery(data.content, data.number, data.totalPages);
+        } else {
+            renderGallery(data, 0, 1);
+        }
     } catch (error) {
         setStatus(statusBox, error.message, true);
     }

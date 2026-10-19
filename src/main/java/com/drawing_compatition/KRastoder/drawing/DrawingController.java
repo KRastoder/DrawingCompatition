@@ -2,6 +2,7 @@ package com.drawing_compatition.KRastoder.drawing;
 
 import com.drawing_compatition.KRastoder.auth.AppUserPrincipal;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
@@ -46,21 +47,27 @@ public class DrawingController {
     }
 
     @GetMapping
-    public List<DrawingResponse> list(
+    public Page<DrawingResponse> list(
             @AuthenticationPrincipal AppUserPrincipal principal,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
     ) {
-        return drawingService.list(principal.id(), date, from, to);
+        return drawingService.listPage(principal.id(), date, from, to, page, size);
     }
 
     @GetMapping("/mine")
-    public List<DrawingResponse> mine(@AuthenticationPrincipal AppUserPrincipal principal) {
-        return drawingService.listMine(principal.id());
+    public Page<DrawingResponse> mine(
+            @AuthenticationPrincipal AppUserPrincipal principal,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return drawingService.listMinePage(principal.id(), page, size);
     }
 
     @GetMapping("/{id}")

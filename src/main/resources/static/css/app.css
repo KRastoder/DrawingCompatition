@@ -3301,3 +3301,55 @@ dialog.detail-dialog::backdrop {
         height: 52px;
     }
 }
+
+/* ==========================================================================
+   PAGINATION
+   ========================================================================== */
+
+.pagination {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    margin: 16px 0 8px;
+    padding: 8px;
+    border: 2px solid #000;
+    background: #fff;
+    box-shadow: 4px 4px 0 #000;
+}
+
+.pagination button {
+    min-width: 32px;
+    height: 28px;
+    padding: 0 8px;
+}
+
+.pagination-ellipsis {
+    padding: 0 6px;
+    color: #666;
+    font-family: "Courier New", monospace;
+    font-weight: 700;
+}
+
+.pagination .btn.active {
+    border-style: inset;
+    background: var(--wc-hot);
+    color: #fff;
+    text-shadow: 1px 1px 0 #000;
+    cursor: default;
+}
+
+@media (max-width: 600px) {
+    .pagination {
+        gap: 2px;
+        padding: 6px;
+    }
+
+    .pagination button {
+        min-width: 28px;
+        height: 26px;
+        padding: 0 4px;
+        font-size: 10px;
+    }
+}

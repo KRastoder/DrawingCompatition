@@ -73,11 +73,11 @@ class DrawingApiIntegrationTest {
 
         mockMvc.perform(get("/api/drawings").with(user(owner)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].description").value("A friendly robot"))
-                .andExpect(jsonPath("$[0].owner.username").value("owner"))
-                .andExpect(jsonPath("$[0].voteCount").value(0))
-                .andExpect(jsonPath("$[0].votedByMe").value(false));
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].description").value("A friendly robot"))
+                .andExpect(jsonPath("$.content[0].owner.username").value("owner"))
+                .andExpect(jsonPath("$.content[0].voteCount").value(0))
+                .andExpect(jsonPath("$.content[0].votedByMe").value(false));
     }
 
     @Test
@@ -88,16 +88,16 @@ class DrawingApiIntegrationTest {
 
         mockMvc.perform(get("/api/drawings/mine").with(user(owner)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[0].id").value(second))
-                .andExpect(jsonPath("$[1].id").value(first));
+                .andExpect(jsonPath("$.content.length()").value(2))
+                .andExpect(jsonPath("$.content[0].id").value(second))
+                .andExpect(jsonPath("$.content[1].id").value(first));
     }
 
     @Test
     void myDrawingsAreEmptyForAUserWithoutDrawings() throws Exception {
         mockMvc.perform(get("/api/drawings/mine").with(user(owner)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(0));
+                .andExpect(jsonPath("$.content.length()").value(0));
     }
 
     @Test
@@ -108,14 +108,14 @@ class DrawingApiIntegrationTest {
 
         mockMvc.perform(get("/api/drawings").param("date", today).with(user(owner)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1));
+                .andExpect(jsonPath("$.content.length()").value(1));
 
         mockMvc.perform(get("/api/drawings")
                         .param("from", today)
                         .param("to", today)
                         .with(user(owner)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1));
+                .andExpect(jsonPath("$.content.length()").value(1));
 
         mockMvc.perform(get("/api/drawings").param("date", "2000-01-01").with(user(owner)))
                 .andExpect(status().isNotFound())

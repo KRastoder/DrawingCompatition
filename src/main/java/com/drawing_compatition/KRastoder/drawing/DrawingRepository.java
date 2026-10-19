@@ -1,5 +1,7 @@
 package com.drawing_compatition.KRastoder.drawing;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -51,6 +53,32 @@ public interface DrawingRepository extends JpaRepository<Drawing, Long> {
             from Drawing d
             join d.user u
             left join d.votes v
+            where d.createdAt >= :from
+              and d.createdAt < :to
+            group by d.id, d.description, d.createdAt, u.id, u.username, u.displayName, u.hasAvatar
+            """)
+    Page<DrawingSummary> findSummaries(
+            @Param("from") Instant from,
+            @Param("to") Instant to,
+            @Param("viewerId") Long viewerId,
+            Pageable pageable
+    );
+
+    @Query("""
+            select new com.drawing_compatition.KRastoder.drawing.DrawingSummary(
+                d.id,
+                d.description,
+                d.createdAt,
+                u.id,
+                u.username,
+                u.displayName,
+                count(v.id),
+                sum(case when v.user.id = :viewerId then 1 else 0 end),
+                u.hasAvatar
+            )
+            from Drawing d
+            join d.user u
+            left join d.votes v
             where d.user.id = :ownerId
             group by d.id, d.description, d.createdAt, u.id, u.username, u.displayName, u.hasAvatar
             order by d.createdAt desc, d.id desc
@@ -58,6 +86,31 @@ public interface DrawingRepository extends JpaRepository<Drawing, Long> {
     List<DrawingSummary> findSummariesByOwner(
             @Param("ownerId") Long ownerId,
             @Param("viewerId") Long viewerId
+    );
+
+    @Query("""
+            select new com.drawing_compatition.KRastoder.drawing.DrawingSummary(
+                d.id,
+                d.description,
+                d.createdAt,
+                u.id,
+                u.username,
+                u.displayName,
+                count(v.id),
+                sum(case when v.user.id = :viewerId then 1 else 0 end),
+                u.hasAvatar
+            )
+            from Drawing d
+            join d.user u
+            left join d.votes v
+            where d.user.id = :ownerId
+            group by d.id, d.description, d.createdAt, u.id, u.username, u.displayName, u.hasAvatar
+            order by d.createdAt desc, d.id desc
+            """)
+    Page<DrawingSummary> findSummariesByOwner(
+            @Param("ownerId") Long ownerId,
+            @Param("viewerId") Long viewerId,
+            Pageable pageable
     );
 
     @Query("""

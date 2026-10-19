@@ -5,6 +5,9 @@ import com.drawing_compatition.KRastoder.common.ForbiddenException;
 import com.drawing_compatition.KRastoder.common.NotFoundException;
 import com.drawing_compatition.KRastoder.user.User;
 import com.drawing_compatition.KRastoder.user.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -65,21 +68,59 @@ public class DrawingService {
 
     @Transactional(readOnly = true)
     public List<DrawingResponse> list(Long viewerId, LocalDate date, LocalDate from, LocalDate to) {
-        DateRange range = DateRange.of(date, from, to);
-        List<DrawingSummary> summaries = drawings.findSummaries(range.from(), range.to(), viewerId);
+        return listPage(viewerId, date, from, to, 0, Integer.MAX_VALUE).getContent();
+    }
 
-        if (summaries.isEmpty()) {
+    @Transactional(readOnly = true)
+    public Page<DrawingResponse> listPage(Long viewerId, LocalDate date, LocalDate from, LocalDate to, int page, int size) {
+        DateRange range = DateRange.of(date, from, to);
+        List<DrawingSummary> allSummaries = drawings.findSummaries(range.from(), range.to(), viewerId);
+
+        boolean hasDateFilter = date != null || from != null;
+
+        if (allSummaries.isEmpty() && hasDateFilter && page == 0) {
             throw new NotFoundException(emptyMessage(date, from, to));
         }
 
-        return summaries.stream().map(DrawingResponse::from).toList();
+        // Apply sorting manually since we can't use Pageable with custom @Query
+        allSummaries.sort((a, b) -> {
+            int voteCompare = Long.compare(b.voteCount(), a.voteCount());
+            if (voteCompare != 0) return voteCompare;
+            int dateCompare = b.createdAt().compareTo(a.createdAt());
+            if (dateCompare != 0) return dateCompare;
+            return b.id().compareTo(a.id());
+        });
+
+        // Manual pagination
+        int start = page * size;
+        int end = Math.min(start + size, allSummaries.size());
+        List<DrawingSummary> pageContent = start >= allSummaries.size() ? List.of() : allSummaries.subList(start, end);
+
+        return new PageImpl<>(pageContent.stream().map(DrawingResponse::from).toList(), PageRequest.of(page, size), allSummaries.size());
     }
 
     @Transactional(readOnly = true)
     public List<DrawingResponse> listMine(Long userId) {
-        return drawings.findSummariesByOwner(userId, userId).stream()
-                .map(DrawingResponse::from)
-                .toList();
+        return listMinePage(userId, 0, Integer.MAX_VALUE).getContent();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<DrawingResponse> listMinePage(Long userId, int page, int size) {
+        List<DrawingSummary> allSummaries = drawings.findSummariesByOwner(userId, userId);
+
+        // Sort by createdAt desc, id desc
+        allSummaries.sort((a, b) -> {
+            int dateCompare = b.createdAt().compareTo(a.createdAt());
+            if (dateCompare != 0) return dateCompare;
+            return b.id().compareTo(a.id());
+        });
+
+        // Manual pagination
+        int start = page * size;
+        int end = Math.min(start + size, allSummaries.size());
+        List<DrawingSummary> pageContent = start >= allSummaries.size() ? List.of() : allSummaries.subList(start, end);
+
+        return new PageImpl<>(pageContent.stream().map(DrawingResponse::from).toList(), PageRequest.of(page, size), allSummaries.size());
     }
 
     @Transactional(readOnly = true)
