@@ -2,6 +2,7 @@ package com.drawing_compatition.KRastoder.demo;
 
 import com.drawing_compatition.KRastoder.comment.Comment;
 import com.drawing_compatition.KRastoder.comment.CommentRepository;
+import com.drawing_compatition.KRastoder.common.StorageService;
 import com.drawing_compatition.KRastoder.drawing.Drawing;
 import com.drawing_compatition.KRastoder.drawing.DrawingRepository;
 import com.drawing_compatition.KRastoder.user.User;
@@ -37,6 +38,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Optional development-only demo data. Enable with app.seed-demo-data=true.
@@ -134,6 +136,7 @@ public class DemoDataSeeder implements ApplicationRunner {
     private final CommentRepository comments;
     private final PasswordEncoder passwordEncoder;
     private final JdbcTemplate jdbc;
+    private final StorageService storage;
     private final Random random = new Random(20100917L);
 
     public DemoDataSeeder(
@@ -142,7 +145,8 @@ public class DemoDataSeeder implements ApplicationRunner {
             VoteRepository votes,
             CommentRepository comments,
             PasswordEncoder passwordEncoder,
-            JdbcTemplate jdbc
+            JdbcTemplate jdbc,
+            StorageService storage
     ) {
         this.users = users;
         this.drawings = drawings;
@@ -150,6 +154,7 @@ public class DemoDataSeeder implements ApplicationRunner {
         this.comments = comments;
         this.passwordEncoder = passwordEncoder;
         this.jdbc = jdbc;
+        this.storage = storage;
     }
 
     @Override
@@ -179,7 +184,11 @@ public class DemoDataSeeder implements ApplicationRunner {
                         passwordEncoder.encode(DEMO_PASSWORD)
                 );
                 user.setBio(definition[2]);
-                user.setAvatar(generateAvatar(definition[1]), "image/png");
+                
+                // Generate and store avatar via StorageService
+                byte[] avatarData = generateAvatar(definition[1]);
+                String avatarStorageKey = storage.store("image/png", avatarData);
+                user.setAvatar(avatarStorageKey, "image/png", avatarData.length);
                 user = users.save(user);
 
                 allUsers.add(user);
@@ -202,11 +211,15 @@ public class DemoDataSeeder implements ApplicationRunner {
             String title = DRAWING_TITLES[random.nextInt(DRAWING_TITLES.length)];
             String note = DRAWING_NOTES[random.nextInt(DRAWING_NOTES.length)];
 
+            byte[] artworkData = generateArtwork(title);
+            String storageKey = storage.store("image/png", artworkData);
+
             Drawing drawing = new Drawing(
                     owner,
                     title + "\n" + note,
-                    generateArtwork(title),
-                    "image/png"
+                    storageKey,
+                    "image/png",
+                    artworkData.length
             );
             drawing = drawings.save(drawing);
 

@@ -32,11 +32,14 @@ public class Drawing {
     @Column(columnDefinition = "text")
     private String description;
 
-    @Column(name = "image_data", nullable = false, columnDefinition = "bytea")
-    private byte[] imageData;
+    @Column(name = "storage_key", nullable = false, length = 200)
+    private String storageKey;
 
     @Column(name = "content_type", nullable = false, length = 100)
     private String contentType;
+
+    @Column(name = "image_size", nullable = false)
+    private long imageSize;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
@@ -50,11 +53,12 @@ public class Drawing {
     protected Drawing() {
     }
 
-    public Drawing(User user, String description, byte[] imageData, String contentType) {
+    public Drawing(User user, String description, String storageKey, String contentType, long imageSize) {
         this.user = user;
         this.description = description;
-        this.imageData = imageData;
+        this.storageKey = storageKey;
         this.contentType = contentType;
+        this.imageSize = imageSize;
         this.createdAt = Instant.now();
         this.updatedAt = this.createdAt;
     }
@@ -71,12 +75,16 @@ public class Drawing {
         return description;
     }
 
-    public byte[] getImageData() {
-        return imageData;
+    public String getStorageKey() {
+        return storageKey;
     }
 
     public String getContentType() {
         return contentType;
+    }
+
+    public long getImageSize() {
+        return imageSize;
     }
 
     public Instant getCreatedAt() {
@@ -96,9 +104,10 @@ public class Drawing {
         this.updatedAt = Instant.now();
     }
 
-    public void replaceImage(byte[] imageData, String contentType) {
-        this.imageData = imageData;
+    public void replaceImage(String storageKey, String contentType, long imageSize) {
+        this.storageKey = storageKey;
         this.contentType = contentType;
+        this.imageSize = imageSize;
         this.updatedAt = Instant.now();
     }
 }

@@ -22,14 +22,14 @@ public interface DrawingRepository extends JpaRepository<Drawing, Long> {
                 u.displayName,
                 count(v.id),
                 sum(case when v.user.id = :viewerId then 1 else 0 end),
-                u.hasAvatar
+                u.avatarStorageKey is not null
             )
             from Drawing d
             join d.user u
             left join d.votes v
             where d.createdAt >= :from
               and d.createdAt < :to
-            group by d.id, d.description, d.createdAt, u.id, u.username, u.displayName, u.hasAvatar
+            group by d.id, d.description, d.createdAt, u.id, u.username, u.displayName, u.avatarStorageKey
             order by count(v.id) desc, d.createdAt desc, d.id desc
             """)
     List<DrawingSummary> findSummaries(
@@ -48,14 +48,14 @@ public interface DrawingRepository extends JpaRepository<Drawing, Long> {
                 u.displayName,
                 count(v.id),
                 sum(case when v.user.id = :viewerId then 1 else 0 end),
-                u.hasAvatar
+                u.avatarStorageKey is not null
             )
             from Drawing d
             join d.user u
             left join d.votes v
             where d.createdAt >= :from
               and d.createdAt < :to
-            group by d.id, d.description, d.createdAt, u.id, u.username, u.displayName, u.hasAvatar
+            group by d.id, d.description, d.createdAt, u.id, u.username, u.displayName, u.avatarStorageKey
             """)
     Page<DrawingSummary> findSummaries(
             @Param("from") Instant from,
@@ -74,13 +74,13 @@ public interface DrawingRepository extends JpaRepository<Drawing, Long> {
                 u.displayName,
                 count(v.id),
                 sum(case when v.user.id = :viewerId then 1 else 0 end),
-                u.hasAvatar
+                u.avatarStorageKey is not null
             )
             from Drawing d
             join d.user u
             left join d.votes v
             where d.user.id = :ownerId
-            group by d.id, d.description, d.createdAt, u.id, u.username, u.displayName, u.hasAvatar
+            group by d.id, d.description, d.createdAt, u.id, u.username, u.displayName, u.avatarStorageKey
             order by d.createdAt desc, d.id desc
             """)
     List<DrawingSummary> findSummariesByOwner(
@@ -98,13 +98,13 @@ public interface DrawingRepository extends JpaRepository<Drawing, Long> {
                 u.displayName,
                 count(v.id),
                 sum(case when v.user.id = :viewerId then 1 else 0 end),
-                u.hasAvatar
+                u.avatarStorageKey is not null
             )
             from Drawing d
             join d.user u
             left join d.votes v
             where d.user.id = :ownerId
-            group by d.id, d.description, d.createdAt, u.id, u.username, u.displayName, u.hasAvatar
+            group by d.id, d.description, d.createdAt, u.id, u.username, u.displayName, u.avatarStorageKey
             order by d.createdAt desc, d.id desc
             """)
     Page<DrawingSummary> findSummariesByOwner(
@@ -123,22 +123,15 @@ public interface DrawingRepository extends JpaRepository<Drawing, Long> {
                 u.displayName,
                 count(v.id),
                 sum(case when v.user.id = :viewerId then 1 else 0 end),
-                u.hasAvatar
+                u.avatarStorageKey is not null
             )
             from Drawing d
             join d.user u
             left join d.votes v
             where d.id = :id
-            group by d.id, d.description, d.createdAt, u.id, u.username, u.displayName, u.hasAvatar
+            group by d.id, d.description, d.createdAt, u.id, u.username, u.displayName, u.avatarStorageKey
             """)
     Optional<DrawingSummary> findSummaryById(@Param("id") Long id, @Param("viewerId") Long viewerId);
-
-    @Query("""
-            select new com.drawing_compatition.KRastoder.drawing.DrawingImage(d.imageData, d.contentType)
-            from Drawing d
-            where d.id = :id
-            """)
-    Optional<DrawingImage> findImageById(@Param("id") Long id);
 
     @Query("select d.user.id from Drawing d where d.id = :id")
     Optional<Long> findOwnerIdById(@Param("id") Long id);

@@ -2,6 +2,7 @@ package com.drawing_compatition.KRastoder.user;
 
 import com.drawing_compatition.KRastoder.common.BadRequestException;
 import com.drawing_compatition.KRastoder.common.NotFoundException;
+import com.drawing_compatition.KRastoder.common.StorageService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,9 +23,11 @@ public class ProfileService {
     );
 
     private final UserRepository users;
+    private final StorageService storage;
 
-    public ProfileService(UserRepository users) {
+    public ProfileService(UserRepository users, StorageService storage) {
         this.users = users;
+        this.storage = storage;
     }
 
     @Transactional(readOnly = true)
@@ -44,7 +47,15 @@ public class ProfileService {
     public UserResponse updateAvatar(Long id, MultipartFile image) {
         User user = find(id);
         ValidatedImage validatedImage = validateImage(image);
-        user.setAvatar(validatedImage.data(), validatedImage.contentType());
+
+        // Delete old avatar if exists
+        if (user.isHasAvatar()) {
+            storage.delete(user.getAvatarStorageKey());
+        }
+
+        // Store new avatar
+        String storageKey = storage.store(validatedImage.contentType(), validatedImage.data());
+        user.setAvatar(storageKey, validatedImage.contentType(), validatedImage.data().length);
         users.save(user);
         return UserResponse.from(user);
     }
@@ -52,18 +63,22 @@ public class ProfileService {
     @Transactional
     public UserResponse removeAvatar(Long id) {
         User user = find(id);
-        user.clearAvatar();
-        users.save(user);
+        if (user.isHasAvatar()) {
+            storage.delete(user.getAvatarStorageKey());
+            user.clearAvatar();
+            users.save(user);
+        }
         return UserResponse.from(user);
     }
 
     @Transactional(readOnly = true)
-    public Avatar getAvatar(Long id) {
+    public StorageService.StoredObject getAvatar(Long id) {
         User user = find(id);
         if (!user.isHasAvatar()) {
             throw new NotFoundException("This user does not have a profile picture.");
         }
-        return new Avatar(user.getAvatarData(), user.getAvatarContentType());
+        return storage.retrieve(user.getAvatarStorageKey())
+                .orElseThrow(() -> new NotFoundException("Avatar not found in storage."));
     }
 
     private User find(Long id) {
@@ -106,9 +121,6 @@ public class ProfileService {
         } catch (IOException exception) {
             throw new BadRequestException("The profile picture could not be read.");
         }
-    }
-
-    public record Avatar(byte[] data, String contentType) {
     }
 
     private record ValidatedImage(byte[] data, String contentType) {

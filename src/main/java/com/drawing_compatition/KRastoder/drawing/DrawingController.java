@@ -1,6 +1,7 @@
 package com.drawing_compatition.KRastoder.drawing;
 
 import com.drawing_compatition.KRastoder.auth.AppUserPrincipal;
+import com.drawing_compatition.KRastoder.common.StorageService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -24,7 +25,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/drawings")
@@ -80,7 +80,7 @@ public class DrawingController {
 
     @GetMapping("/{id}/image")
     public ResponseEntity<byte[]> image(@PathVariable Long id) {
-        DrawingImage image = drawingService.getImage(id);
+        StorageService.StoredObject image = drawingService.getImage(id);
         MediaType mediaType;
         try {
             mediaType = MediaType.parseMediaType(image.contentType());

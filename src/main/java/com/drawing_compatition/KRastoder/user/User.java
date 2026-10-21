@@ -32,14 +32,14 @@ public class User {
     @Column(columnDefinition = "text")
     private String bio;
 
-    @Column(name = "avatar_data", columnDefinition = "bytea")
-    private byte[] avatarData;
+    @Column(name = "avatar_storage_key", length = 200)
+    private String avatarStorageKey;
 
     @Column(name = "avatar_content_type", length = 100)
     private String avatarContentType;
 
-    @Column(name = "has_avatar", nullable = false)
-    private boolean hasAvatar;
+    @Column(name = "avatar_size")
+    private Long avatarSize;
 
     protected User() {
     }
@@ -87,27 +87,31 @@ public class User {
         this.bio = bio;
     }
 
-    public byte[] getAvatarData() {
-        return avatarData;
+    public String getAvatarStorageKey() {
+        return avatarStorageKey;
     }
 
     public String getAvatarContentType() {
         return avatarContentType;
     }
 
-    public boolean isHasAvatar() {
-        return hasAvatar;
+    public Long getAvatarSize() {
+        return avatarSize;
     }
 
-    public void setAvatar(byte[] avatarData, String avatarContentType) {
-        this.avatarData = avatarData;
+    public boolean isHasAvatar() {
+        return avatarStorageKey != null && !avatarStorageKey.isBlank();
+    }
+
+    public void setAvatar(String avatarStorageKey, String avatarContentType, long avatarSize) {
+        this.avatarStorageKey = avatarStorageKey;
         this.avatarContentType = avatarContentType;
-        this.hasAvatar = avatarData != null;
+        this.avatarSize = avatarSize;
     }
 
     public void clearAvatar() {
-        this.avatarData = null;
+        this.avatarStorageKey = null;
         this.avatarContentType = null;
-        this.hasAvatar = false;
+        this.avatarSize = null;
     }
 }

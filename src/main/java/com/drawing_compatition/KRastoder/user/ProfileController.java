@@ -1,6 +1,7 @@
 package com.drawing_compatition.KRastoder.user;
 
 import com.drawing_compatition.KRastoder.auth.AppUserPrincipal;
+import com.drawing_compatition.KRastoder.common.StorageService;
 import jakarta.validation.Valid;
 import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
@@ -60,7 +61,7 @@ public class ProfileController {
 
     @GetMapping("/users/{id}/avatar")
     public ResponseEntity<byte[]> avatar(@PathVariable Long id) {
-        ProfileService.Avatar avatar = profiles.getAvatar(id);
+        StorageService.StoredObject avatar = profiles.getAvatar(id);
         MediaType mediaType;
         try {
             mediaType = MediaType.parseMediaType(avatar.contentType());

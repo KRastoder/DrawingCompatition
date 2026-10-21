@@ -3,6 +3,7 @@ package com.drawing_compatition.KRastoder.drawing;
 import com.drawing_compatition.KRastoder.common.BadRequestException;
 import com.drawing_compatition.KRastoder.common.ForbiddenException;
 import com.drawing_compatition.KRastoder.common.NotFoundException;
+import com.drawing_compatition.KRastoder.common.StorageService;
 import com.drawing_compatition.KRastoder.user.User;
 import com.drawing_compatition.KRastoder.user.UserRepository;
 import org.springframework.data.domain.Page;
@@ -31,10 +32,12 @@ public class DrawingService {
 
     private final DrawingRepository drawings;
     private final UserRepository users;
+    private final StorageService storage;
 
-    public DrawingService(DrawingRepository drawings, UserRepository users) {
+    public DrawingService(DrawingRepository drawings, UserRepository users, StorageService storage) {
         this.drawings = drawings;
         this.users = users;
+        this.storage = storage;
     }
 
     @Transactional
@@ -45,11 +48,15 @@ public class DrawingService {
         String description = normalizeDescription(rawDescription);
         ValidatedImage validatedImage = validateImage(image);
 
+        // Store image via StorageService
+        String storageKey = storage.store(validatedImage.contentType(), validatedImage.data());
+
         Drawing drawing = drawings.save(new Drawing(
                 user,
                 description,
-                validatedImage.data(),
-                validatedImage.contentType()
+                storageKey,
+                validatedImage.contentType(),
+                validatedImage.data().length
         ));
 
         DrawingSummary summary = new DrawingSummary(
@@ -74,29 +81,20 @@ public class DrawingService {
     @Transactional(readOnly = true)
     public Page<DrawingResponse> listPage(Long viewerId, LocalDate date, LocalDate from, LocalDate to, int page, int size) {
         DateRange range = DateRange.of(date, from, to);
-        List<DrawingSummary> allSummaries = drawings.findSummaries(range.from(), range.to(), viewerId);
+        // Use database-level pagination with sorting
+        Page<DrawingSummary> summaryPage = drawings.findSummaries(range.from(), range.to(), viewerId, PageRequest.of(page, size));
 
         boolean hasDateFilter = date != null || from != null;
 
-        if (allSummaries.isEmpty() && hasDateFilter && page == 0) {
+        if (summaryPage.isEmpty() && hasDateFilter && page == 0) {
             throw new NotFoundException(emptyMessage(date, from, to));
         }
 
-        // Apply sorting manually since we can't use Pageable with custom @Query
-        allSummaries.sort((a, b) -> {
-            int voteCompare = Long.compare(b.voteCount(), a.voteCount());
-            if (voteCompare != 0) return voteCompare;
-            int dateCompare = b.createdAt().compareTo(a.createdAt());
-            if (dateCompare != 0) return dateCompare;
-            return b.id().compareTo(a.id());
-        });
-
-        // Manual pagination
-        int start = page * size;
-        int end = Math.min(start + size, allSummaries.size());
-        List<DrawingSummary> pageContent = start >= allSummaries.size() ? List.of() : allSummaries.subList(start, end);
-
-        return new PageImpl<>(pageContent.stream().map(DrawingResponse::from).toList(), PageRequest.of(page, size), allSummaries.size());
+        return new PageImpl<>(
+                summaryPage.getContent().stream().map(DrawingResponse::from).toList(),
+                summaryPage.getPageable(),
+                summaryPage.getTotalElements()
+        );
     }
 
     @Transactional(readOnly = true)
@@ -106,21 +104,14 @@ public class DrawingService {
 
     @Transactional(readOnly = true)
     public Page<DrawingResponse> listMinePage(Long userId, int page, int size) {
-        List<DrawingSummary> allSummaries = drawings.findSummariesByOwner(userId, userId);
+        // Use database-level pagination with sorting (createdAt desc, id desc)
+        Page<DrawingSummary> summaryPage = drawings.findSummariesByOwner(userId, userId, PageRequest.of(page, size));
 
-        // Sort by createdAt desc, id desc
-        allSummaries.sort((a, b) -> {
-            int dateCompare = b.createdAt().compareTo(a.createdAt());
-            if (dateCompare != 0) return dateCompare;
-            return b.id().compareTo(a.id());
-        });
-
-        // Manual pagination
-        int start = page * size;
-        int end = Math.min(start + size, allSummaries.size());
-        List<DrawingSummary> pageContent = start >= allSummaries.size() ? List.of() : allSummaries.subList(start, end);
-
-        return new PageImpl<>(pageContent.stream().map(DrawingResponse::from).toList(), PageRequest.of(page, size), allSummaries.size());
+        return new PageImpl<>(
+                summaryPage.getContent().stream().map(DrawingResponse::from).toList(),
+                summaryPage.getPageable(),
+                summaryPage.getTotalElements()
+        );
     }
 
     @Transactional(readOnly = true)
@@ -131,9 +122,11 @@ public class DrawingService {
     }
 
     @Transactional(readOnly = true)
-    public DrawingImage getImage(Long id) {
-        return drawings.findImageById(id)
+    public StorageService.StoredObject getImage(Long id) {
+        Drawing drawing = drawings.findById(id)
                 .orElseThrow(() -> new NotFoundException("Drawing not found."));
+        return storage.retrieve(drawing.getStorageKey())
+                .orElseThrow(() -> new NotFoundException("Drawing image not found in storage."));
     }
 
     @Transactional
@@ -148,7 +141,16 @@ public class DrawingService {
     public DrawingResponse replaceImage(Long id, Long userId, MultipartFile image) {
         Drawing drawing = ownedDrawing(id, userId);
         ValidatedImage validatedImage = validateImage(image);
-        drawing.replaceImage(validatedImage.data(), validatedImage.contentType());
+
+        // Store new image
+        String newStorageKey = storage.store(validatedImage.contentType(), validatedImage.data());
+
+        // Delete old image (best effort)
+        if (drawing.getStorageKey() != null) {
+            storage.delete(drawing.getStorageKey());
+        }
+
+        drawing.replaceImage(newStorageKey, validatedImage.contentType(), validatedImage.data().length);
         drawings.save(drawing);
         return get(id, userId);
     }
@@ -156,6 +158,12 @@ public class DrawingService {
     @Transactional
     public void delete(Long id, Long userId) {
         Drawing drawing = ownedDrawing(id, userId);
+        
+        // Delete image from storage
+        if (drawing.getStorageKey() != null) {
+            storage.delete(drawing.getStorageKey());
+        }
+        
         drawings.delete(drawing);
     }
 
