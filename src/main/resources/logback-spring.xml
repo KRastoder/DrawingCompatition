@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <property name="CONSOLE_LOG_PATTERN" value="${CONSOLE_LOG_PATTERN:%clr(%d{${LOG_DATEFORMAT_PATTERN:-yyyy-MM-dd'T'HH:mm:ss.SSSXXX}}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}}"/>
+
+    <!-- JSON Appender for structured logging -->
+    <appender name="CONSOLE_JSON" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp>
+                    <timeZone>UTC</timeZone>
+                    <fieldName>@timestamp</fieldName>
+                </timestamp>
+                <loggerName>
+                    <fieldName>logger</fieldName>
+                </loggerName>
+                <threadName>
+                    <fieldName>thread</fieldName>
+                </threadName>
+                <level>
+                    <fieldName>level</fieldName>
+                </level>
+                <logstashMarkers/>
+                <arguments/>
+                <stackTrace>
+                    <fieldName>stack_trace</fieldName>
+                    <throwableConverter class="net.logstash.logback.stacktrace.ShortenedThrowableConverter">
+                        <maxDepthPerThrowable>30</maxDepthPerThrowable>
+                        <maxLength>2048</maxLength>
+                        <shortenedClassNameLength>20</shortenedClassNameLength>
+                        <exclude>^ch\.qos\.logback\.</exclude>
+                        <exclude>^org\.apache\.logging\.log4j\.</exclude>
+                        <exclude>^org\.slf4j\.</exclude>
+                        <rootCauseFirst>true</rootCauseFirst>
+                    </throwableConverter>
+                </stackTrace>
+                <mdc>
+                    <fieldName>mdc</fieldName>
+                </mdc>
+                <message>
+                    <fieldName>message</fieldName>
+                </message>
+                <context>
+                    <fieldName>context</fieldName>
+                </context>
+                <customFields>
+                    <fieldName>application</fieldName>
+                    <fieldValue>KRastoder</fieldValue>
+                </customFields>
+                <customFields>
+                    <fieldName>environment</fieldName>
+                    <fieldValue>${spring.profiles.active:-local}</fieldValue>
+                </customFields>
+            </providers>
+        </encoder>
+    </appender>
+
+    <!-- Human-readable console appender for local development -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Spring Boot default root logger -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE_JSON"/>
+    </root>
+
+    <!-- Reduce noise from noisy libraries -->
+    <logger name="org.hibernate.SQL" level="WARN"/>
+    <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="WARN"/>
+    <logger name="org.springframework.web" level="INFO"/>
+    <logger name="org.springframework.security" level="INFO"/>
+    <logger name="org.flywaydb" level="INFO"/>
+    <logger name="com.zaxxer.hikari" level="INFO"/>
+
+    <!-- Application logger with DEBUG level -->
+    <logger name="com.drawing_compatition.KRastoder" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE_JSON"/>
+    </logger>
+
+</configuration>

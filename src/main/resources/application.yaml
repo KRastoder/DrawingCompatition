@@ -5,6 +5,12 @@ spring:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/mydatabase}
     username: ${DB_USER:myuser}
     password: ${DB_PASSWORD:secret}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
   jpa:
     hibernate:
       ddl-auto: validate
@@ -27,10 +33,45 @@ server:
       cookie:
         http-only: true
         same-site: lax
+  forward-headers-strategy: native
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+    info:
+      enabled: true
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+  info:
+    build:
+      enabled: true
+    git:
+      enabled: true
+      mode: full
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    export:
+      prometheus:
+        enabled: true
 
 logging:
   level:
     org.hibernate.SQL: warn
+    org.springframework.web: info
+    com.drawing_compatition.KRastoder: debug
+  pattern:
+    correlation: "[%X{X-Request-ID:-}] "
 
 # Development-only demo data. Enable with SEED_DEMO_DATA=true or
 # --app.seed-demo-data=true. The seeder tops up to 10 users / 100 drawings.

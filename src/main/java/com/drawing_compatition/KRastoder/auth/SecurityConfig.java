@@ -57,6 +57,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(csrfRepository)
                         .csrfTokenRequestHandler(csrfRequestHandler)
+                        .ignoringRequestMatchers("/actuator/**")
                 )
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(
@@ -70,6 +71,8 @@ public class SecurityConfig {
                                 "/api/auth/login",
                                 "/error"
                         ).permitAll()
+                        .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                        .requestMatchers("/actuator/**").hasRole("USER")
                         .requestMatchers("/api/**").hasRole("USER")
                         .anyRequest().hasRole("USER")
                 )
