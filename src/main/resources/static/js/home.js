@@ -1,4 +1,4 @@
-import { api, createAvatar, formatDate, readProblem, setStatus, todayISO } from "./api.js";
+import { api, createAvatar, formatDate, readProblem, setStatus, todayISO, clearCache, isNetworkOnline, onNetworkChange } from "./api.js";
 import { addSidebarWidget, initShell } from "./shell.js";
 
 const gallery = document.getElementById("gallery");
@@ -356,65 +356,93 @@ async function loadGallery() {
 
     setStatus(galleryStatus, "Loading drawings...", false);
 
-    try {
-        const query = params.toString();
-        const response = await api("/api/drawings" + (query ? "?" + query : ""));
+    // Retry up to 2 times on network errors
+    const maxRetries = 2;
+    let lastError;
+    
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+            const query = params.toString();
+            const response = await api("/api/drawings" + (query ? "?" + query : ""));
 
-        if (response.status === 404) {
-            const problem = await response.json().catch(function () {
-                return {};
-            });
-            renderGallery([], 0, 1);
-            showEmpty(problem.detail || "No drawings were found for that filter.");
+            if (response.status === 404) {
+                const problem = await response.json().catch(function () {
+                    return {};
+                });
+                renderGallery([], 0, 1);
+                showEmpty(problem.detail || "No drawings were found for that filter.");
+                setStatus(galleryStatus, "", false);
+                return;
+            }
+
+            if (!response.ok) {
+                throw new Error(await readProblem(response));
+            }
+
+            const data = await response.json();
+
+            if (data.content !== undefined) {
+                renderGallery(data.content, data.number, data.totalPages);
+                if (data.content.length === 0) {
+                    showEmpty("No drawings were found.");
+                } else {
+                    hideEmpty();
+                }
+            } else {
+                renderGallery(data, 0, 1);
+                if (data.length === 0) {
+                    showEmpty("No drawings were found.");
+                } else {
+                    hideEmpty();
+                }
+            }
             setStatus(galleryStatus, "", false);
-            return;
-        }
-
-        if (!response.ok) {
-            throw new Error(await readProblem(response));
-        }
-
-        const data = await response.json();
-
-        if (data.content !== undefined) {
-            renderGallery(data.content, data.number, data.totalPages);
-            if (data.content.length === 0) {
-                showEmpty("No drawings were found.");
-            } else {
-                hideEmpty();
-            }
-        } else {
-            renderGallery(data, 0, 1);
-            if (data.length === 0) {
-                showEmpty("No drawings were found.");
-            } else {
-                hideEmpty();
+            return; // Success, exit retry loop
+        } catch (error) {
+            lastError = error;
+            if (attempt < maxRetries) {
+                const delay = 1000 * Math.pow(2, attempt); // Exponential backoff
+                setStatus(galleryStatus, `Retrying... (${attempt + 1}/${maxRetries})`, false);
+                await new Promise(resolve => setTimeout(resolve, delay));
             }
         }
-        setStatus(galleryStatus, "", false);
-    } catch (error) {
-        setStatus(galleryStatus, error.message, true);
     }
+    
+    // All retries failed
+    setStatus(galleryStatus, lastError.message || "Failed to load drawings after retries.", true);
 }
 
 async function toggleVote(drawing, button) {
     button.disabled = true;
 
-    try {
-        const method = drawing.votedByMe ? "DELETE" : "POST";
-        const response = await api("/api/drawings/" + drawing.id + "/votes", { method: method });
-        if (!response.ok) {
-            throw new Error(await readProblem(response));
-        }
+    // Retry up to 2 times
+    const maxRetries = 2;
+    let lastError;
+    
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+            const method = drawing.votedByMe ? "DELETE" : "POST";
+            const response = await api("/api/drawings/" + drawing.id + "/votes", { method: method });
+            if (!response.ok) {
+                throw new Error(await readProblem(response));
+            }
 
-        await loadGallery();
-        if (activeDrawing && activeDrawing.id === drawing.id) {
-            await openDetail(drawing.id);
+            await loadGallery();
+            if (activeDrawing && activeDrawing.id === drawing.id) {
+                await openDetail(drawing.id);
+            }
+            return; // Success
+        } catch (error) {
+            lastError = error;
+            if (attempt < maxRetries) {
+                await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt)));
+            }
         }
-    } catch (error) {
-        setStatus(galleryStatus, error.message, true);
-        button.disabled = false;
     }
+    
+    // All retries failed
+    setStatus(galleryStatus, "Vote failed: " + (lastError.message || "Unknown error"), true);
+    button.disabled = false;
 }
 
 function setFilterMode(mode) {

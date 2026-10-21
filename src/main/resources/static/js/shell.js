@@ -1,4 +1,4 @@
-import { api, createAvatar } from "./api.js";
+import { api, createAvatar, isNetworkOnline, onNetworkChange } from "./api.js";
 
 const NAV_ITEMS = [
     { key: "home", href: "/", label: "Home" },
@@ -11,6 +11,25 @@ const MARQUEE_TEXT = "★ WELCOME TO THE DRAWING COMPETITION ★ DRAW ★ VOTE �
 
 let activeKey = null;
 
+let networkStatusElement = null;
+
+function updateNetworkStatus() {
+    if (!networkStatusElement) {
+        networkStatusElement = document.getElementById("network-status");
+    }
+    if (!networkStatusElement) {
+        return;
+    }
+
+    if (isNetworkOnline()) {
+        networkStatusElement.textContent = "🟢 Online";
+        networkStatusElement.className = "network-status online";
+    } else {
+        networkStatusElement.textContent = "🔴 Offline — changes will sync when reconnected";
+        networkStatusElement.className = "network-status offline";
+    }
+}
+
 export async function initShell(active) {
     activeKey = active;
     const response = await api("/api/auth/me");
@@ -21,6 +40,11 @@ export async function initShell(active) {
 
     const user = await response.json();
     renderChrome(active, user);
+    
+    // Initialize network status indicator
+    updateNetworkStatus();
+    onNetworkChange(updateNetworkStatus);
+    
     return user;
 }
 
@@ -86,6 +110,7 @@ function renderHeader(active, user) {
             </span>
         </div>
         <nav class="site-nav" aria-label="Main navigation"></nav>
+        <div class="network-status" id="network-status" aria-live="polite"></div>
     `;
 
     const nav = header.querySelector(".site-nav");
