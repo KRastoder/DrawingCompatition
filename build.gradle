@@ -31,6 +31,9 @@ dependencies {
 	runtimeOnly 'org.flywaydb:flyway-database-postgresql'
 	implementation 'org.springframework.modulith:spring-modulith-starter-core'
 	implementation 'io.micrometer:micrometer-registry-prometheus'
+	// Rate limiting (Bucket4j) - core library with Caffeine for in-memory rate limiting
+	implementation 'com.bucket4j:bucket4j-core:8.10.1'
+	implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
 	developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
 	runtimeOnly 'org.postgresql:postgresql'
 	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
